@@ -163,17 +163,35 @@ async function streamGemini({ res, images, systemPrompt, modelName, userNote }) 
 
 async function streamAnalysis({ res, images, mode, tier, userNote }) {
   const systemPrompt = buildSystemPrompt(mode);
-  const geminiModel  = tier === "quick" ? GEMINI_QUICK : GEMINI_DEEP;
 
-  try {
-    sseWrite(res, { status: `Contacting Gemini (${geminiModel})…` });
-    sseWrite(res, { status: "Analysing…", provider: "gemini", model: geminiModel });
-    await streamGemini({ res, images, systemPrompt, modelName: geminiModel, userNote });
-  } catch (err) {
-    console.error("Gemini error:", err.message);
-    sseWrite(res, { error: `Gemini error: ${err.message}` });
-    res.end();
+  // Try models in order — first available wins
+  const models = tier === "quick"
+    ? [GEMINI_QUICK, "gemini-1.5-flash-8b", "gemini-1.5-pro", "gemini-1.0-pro"]
+    : [GEMINI_DEEP,  "gemini-1.5-pro", "gemini-1.5-flash-8b"];
+
+  let lastErr = null;
+  for (const modelName of models) {
+    try {
+      sseWrite(res, { status: `Contacting Gemini (${modelName})…` });
+      sseWrite(res, { status: "Analysing…", provider: "gemini", model: modelName });
+      await streamGemini({ res, images, systemPrompt, modelName, userNote });
+      return; // success
+    } catch (err) {
+      lastErr = err;
+      console.warn(`Gemini model ${modelName} failed: ${err.message}`);
+      // 404 = model not found, try next; other errors are fatal
+      if (!err.message.includes("404")) {
+        sseWrite(res, { error: `Gemini error: ${err.message}` });
+        res.end();
+        return;
+      }
+      sseWrite(res, { status: `↻ ${modelName} unavailable, trying next…` });
+    }
   }
+
+  console.error("All Gemini models failed:", lastErr?.message);
+  sseWrite(res, { error: `Gemini error: ${lastErr?.message}` });
+  res.end();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
