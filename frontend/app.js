@@ -528,6 +528,7 @@ async function refreshHistoryPanel() {
 
   historyList.innerHTML = items.map((item) => `
     <div class="history-item" data-id="${item.id}">
+      <button class="history-del-btn" data-id="${item.id}" title="Delete this scan">✕</button>
       <img class="history-thumb"
            src="${item.thumbnailDataUri || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="}"
            alt="thumb" />
@@ -543,6 +544,17 @@ async function refreshHistoryPanel() {
 }
 
 historyList.addEventListener("click", async (e) => {
+  // If delete button clicked, remove single item
+  const delBtn = e.target.closest(".history-del-btn");
+  if (delBtn) {
+    const id = parseInt(delBtn.dataset.id, 10);
+    if (confirm("Delete this scan from history?")) {
+      await historyDelete(id);
+      await refreshHistoryPanel();
+      toast("Scan deleted.", "success");
+    }
+    return;
+  }
   const item = e.target.closest(".history-item");
   if (!item) return;
   const id = parseInt(item.dataset.id, 10);
@@ -573,7 +585,7 @@ historyList.addEventListener("click", async (e) => {
 
 // ─── (Modal close now handled by inline HTML onclick attributes) ────────────
 
-// ─── History toggle ────────────────────────────────────────────────────────
+// ─── History toggle & close ──────────────────────────────────────────────
 historyToggleBtn.addEventListener("click", () => {
   const opening = !historyPanel.classList.contains("open");
   historyPanel.classList.toggle("open");
@@ -588,6 +600,15 @@ clearHistoryBtn.addEventListener("click", async () => {
   await refreshHistoryPanel();
   toast("History cleared.");
 });
+
+// ─── History close button ────────────────────────────────────────────
+if (historyCloseBtn) {
+  historyCloseBtn.addEventListener("click", () => {
+    historyPanel.classList.remove("open");
+    historyPanel.setAttribute("aria-hidden", "true");
+    panelOverlay.hidden = true;
+  });
+}
 
 // ─── Usage dashboard ──────────────────────────────────────────────────────────
 dashboardBtn.addEventListener("click", async () => {
