@@ -59,9 +59,13 @@ body {
   display: inline-block;
   vertical-align: middle;
   flex-shrink: 0;
+  pointer-events: none;
 }
 
-.btn svg { margin-right: 2px; }
+.btn svg {
+  margin-right: 2px;
+  pointer-events: none;
+}
 
 .card-header h2 svg,
 .card-header h3 svg,

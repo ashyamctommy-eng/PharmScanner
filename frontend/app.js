@@ -551,9 +551,17 @@ function closeDetailModal() {
   currentDetailId = null;
 }
 
-detailCloseBtn.addEventListener("pointerdown", closeDetailModal);
-detailOverlay.addEventListener("pointerdown", (e) => {
-  if (e.target === detailOverlay) closeDetailModal();
+function onDetailOverlay(e) {
+  if (e.target === detailOverlay || e.target === document.getElementById("detailModal")) {
+    // Only close when tapping the dark background, not inside the modal
+    if (e.target === detailOverlay) closeDetailModal();
+  }
+}
+
+// Bind multiple events for maximum mobile compatibility
+["pointerdown", "click"].forEach((ev) => {
+  detailCloseBtn.addEventListener(ev, closeDetailModal);
+  detailOverlay.addEventListener(ev, onDetailOverlay);
 });
 
 detailCopyBtn.addEventListener("click", () => {
@@ -578,14 +586,25 @@ historyToggleBtn.addEventListener("pointerdown", () => {
   if (historyPanel.classList.contains("open")) refreshHistoryPanel();
 });
 
-historyCloseBtn.addEventListener("pointerdown", () => {
+// ─── Close helpers ─────────────────────────────────────────────────────────
+function closeHistory() {
   historyPanel.classList.remove("open");
+  historyPanel.setAttribute("aria-hidden", "true");
   panelOverlay.hidden = true;
-});
+}
 
-panelOverlay.addEventListener("pointerdown", () => {
-  historyPanel.classList.remove("open");
-  panelOverlay.hidden = true;
+function closeDashboard(e) {
+  if (!e || e.target === dashboardOverlay || e.target.id === "dashboardCloseBtn" || e.target.closest(".icon-btn")) {
+    dashboardOverlay.hidden = true;
+  }
+}
+
+// Bind both events for mobile reliability
+["pointerdown", "click"].forEach((ev) => {
+  historyCloseBtn.addEventListener(ev, closeHistory);
+  panelOverlay.addEventListener(ev, closeHistory);
+  dashboardCloseBtn.addEventListener(ev, closeDashboard);
+  dashboardOverlay.addEventListener(ev, closeDashboard);
 });
 
 clearHistoryBtn.addEventListener("click", async () => {
@@ -599,11 +618,6 @@ clearHistoryBtn.addEventListener("click", async () => {
 dashboardBtn.addEventListener("click", async () => {
   await renderDashboard();
   dashboardOverlay.hidden = false;
-});
-
-dashboardCloseBtn.addEventListener("pointerdown", () => { dashboardOverlay.hidden = true; });
-dashboardOverlay.addEventListener("pointerdown", (e) => {
-  if (e.target === dashboardOverlay) dashboardOverlay.hidden = true;
 });
 
 async function renderDashboard() {
