@@ -819,6 +819,42 @@ body.dark .history-del-btn {
   background: rgba(220, 38, 38, 0.9);
 }
 
+/* ─── History copy button (single item) ─────────────────────────────── */
+.history-copy-btn {
+  position: absolute;
+  top: 4px;
+  right: 28px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(13, 148, 136, 0.75);
+  color: #fff;
+  font-size: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  line-height: 1;
+  z-index: 5;
+  padding: 0;
+}
+.history-item:hover .history-copy-btn {
+  opacity: 1;
+}
+.history-copy-btn:hover {
+  background: rgba(13, 148, 136, 1);
+  transform: scale(1.1);
+}
+body.dark .history-copy-btn {
+  background: rgba(13, 148, 136, 0.85);
+}
+body.dark .history-copy-btn:hover {
+  background: rgba(13, 148, 136, 1);
+}
+
 /* ─── Dark mode ────────────────────────────────────────────────────────── */
 body.dark {
   --primary: #0ea5e9;
