@@ -126,14 +126,45 @@ async function drainOfflineQueue() {
 
 // ─── Camera start & blur detection ───────────────────────────────────────────
 async function initCamera() {
-  const ok = await startCamera(cameraFeed);
-  if (!ok) {
-    uploadFallback.hidden = false;
-    captureBtn.hidden = true;
-  } else {
-    uploadFallback.hidden = true;
-    captureBtn.hidden = false;
-    startBlurCheck();
+  // Request camera permission explicitly first
+  try {
+    // Try simpler constraints first, then fall back
+    const ok = await startCamera(cameraFeed);
+    if (ok) {
+      uploadFallback.hidden = true;
+      captureBtn.hidden = false;
+      startBlurCheck();
+      return;
+    }
+  } catch { /* fall through */ }
+
+  // Camera failed — show upload option + retry button
+  uploadFallback.hidden = false;
+  captureBtn.hidden = true;
+  // Add retry capability
+  if (!document.getElementById("retryCameraBtn")) {
+    const retry = document.createElement("button");
+    retry.id = "retryCameraBtn";
+    retry.className = "btn btn-sm";
+    retry.textContent = "📷 Try Camera Again";
+    retry.style.cssText = "margin-top:0.5rem;font-size:0.8rem";
+    retry.onclick = async () => {
+      retry.disabled = true;
+      retry.textContent = "⏳ Requesting…";
+      const ok = await startCamera(cameraFeed);
+      if (ok) {
+        uploadFallback.hidden = true;
+        captureBtn.hidden = false;
+        retry.remove();
+        startBlurCheck();
+        toast("Camera ready ✅");
+      } else {
+        retry.disabled = false;
+        retry.textContent = "📷 Try Camera Again";
+        toast("Camera access denied. Check browser permissions.", "error");
+      }
+    };
+    cameraFeed.parentElement?.appendChild(retry);
   }
 }
 

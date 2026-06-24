@@ -19,17 +19,35 @@ let mediaStream = null;
  * Returns true if camera started, false if permission denied.
  */
 export async function startCamera(videoEl) {
+  // Check if permission was previously denied
   try {
-    // Use simpler constraints for wider device compatibility
+    const perm = await navigator.permissions?.query?.({ name: "camera" });
+    if (perm?.state === "denied") {
+      console.warn("Camera permission previously denied");
+      return false;
+    }
+  } catch { /* permissions API not supported */ }
+
+  try {
+    // Progressive constraints: start simple, increase quality if possible
     mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment", width: 1280, height: 720 },
+      video: { facingMode: "environment" },
       audio: false,
     });
     videoEl.srcObject = mediaStream;
     await videoEl.play();
     return true;
-  } catch {
-    return false;
+  } catch (err) {
+    console.warn("Camera start failed:", err.message);
+    // Fallback: try without facingMode
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      videoEl.srcObject = mediaStream;
+      await videoEl.play();
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 
@@ -119,17 +137,16 @@ export function compressImage(fileOrBlob) {
  */
 export function measureBlur(blob) {
   return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
-
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const SIZE = 128; // sample size — fast enough for real-time
-      const canvas = document.createElement("canvas");
-      canvas.width = canvas.height = SIZE;
-      const ctx = canvas.getContext("2d");
-      ctx.filter = "grayscale(1)";
-      ctx.drawImage(img, 0, 0, SIZE, SIZE);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const SIZE = 128;
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = SIZE;
+        const ctx = canvas.getContext("2d");
+        ctx.filter = "grayscale(1)";
+        ctx.drawImage(img, 0, 0, SIZE, SIZE);
 
       const { data } = ctx.getImageData(0, 0, SIZE, SIZE);
       const pixels = new Float32Array(SIZE * SIZE);
@@ -153,8 +170,11 @@ export function measureBlur(blob) {
       resolve(Math.abs(variance));
     };
 
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(999); }; // if err, assume sharp
-    img.src = url;
+    img.onerror = () => resolve(999);
+    img.src = e.target.result;
+  };
+  reader.onerror = () => resolve(999);
+  reader.readAsDataURL(blob);
   });
 }
 
