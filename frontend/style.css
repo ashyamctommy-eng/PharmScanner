@@ -648,6 +648,37 @@ body {
   color: var(--gray-700);
 }
 .result-body hr { border: none; border-top: 2px solid var(--gray-200); margin: 1.1em 0; }
+.result-body pre {
+  background: var(--gray-100);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.88em;
+  border: 1px solid var(--gray-200);
+  margin: 0.7em 0;
+}
+.result-body pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+.result-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.7em 0;
+  font-size: 0.9em;
+}
+.result-body th, .result-body td {
+  border: 1px solid var(--gray-200);
+  padding: 0.45em 0.7em;
+  text-align: left;
+}
+.result-body th {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+.result-body img { max-width: 100%; border-radius: 8px; margin: 0.5em 0; }
 .result-body table { width: 100%; border-collapse: collapse; margin: 0.9em 0; font-size: 0.88rem; }
 .result-body th,.result-body td { border: 1px solid var(--gray-200); padding: 0.45em 0.7em; text-align: left; }
 .result-body th { background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
