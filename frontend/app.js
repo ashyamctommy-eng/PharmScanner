@@ -563,40 +563,30 @@ clearHistoryBtn.addEventListener("click", async () => {
 
 // ─── Usage dashboard ──────────────────────────────────────────────────────────
 dashboardBtn.addEventListener("click", async () => {
-  await renderDashboard();
-  dashboardOverlay.hidden = false;
-});
-
-async function renderDashboard() {
-  const allMonths = await usageGetAll();
-  if (!allMonths.length) {
-    dashboardBody.innerHTML = `<p class="empty-state">No usage recorded yet.</p>`;
-    return;
-  }
-  dashboardBody.innerHTML = allMonths.map((m) => `
-    <div class="dashboard-month">
-      <h4>${m.month}</h4>
-      <div class="stat-grid">
-        <div class="stat-box">
-          <div class="stat-val">${m.scans}</div>
-          <div class="stat-label">Total Scans</div>
-        </div>
-        <div class="stat-box cost-box">
-          <div class="stat-val">$${m.costUsd.toFixed(4)}</div>
-          <div class="stat-label">Est. Cost (USD)</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val">${formatTokens(m.inputTokens)}</div>
-          <div class="stat-label">Input Tokens</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val">${formatTokens(m.outputTokens)}</div>
-          <div class="stat-label">Output Tokens</div>
+  const stats = await usageGetAll();
+  resultCard.hidden = false;
+  if (!stats.length) {
+    resultBody.innerHTML = `<p style="color:var(--gray-400);text-align:center">No usage recorded yet.</p>`;
+  } else {
+    resultBody.innerHTML = `<h2>📊 Usage Dashboard</h2>` + stats.map((m) => `
+      <div style="margin-bottom:1rem">
+        <strong style="color:var(--primary-dark)">${m.month}</strong>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.4rem">
+          <div style="background:var(--gray-50);padding:0.5rem 0.75rem;border-radius:8px;border:1.5px solid var(--gray-200)">
+            <div style="font-size:1.2rem;font-weight:700;color:var(--primary-dark)">${m.scans}</div>
+            <div style="font-size:0.7rem;color:var(--gray-400)">Scans</div>
+          </div>
+          <div style="background:var(--gray-50);padding:0.5rem 0.75rem;border-radius:8px;border:1.5px solid var(--gray-200)">
+            <div style="font-size:1.2rem;font-weight:700;color:var(--accent-dark)">${m.costUsd.toFixed(4)}</div>
+            <div style="font-size:0.7rem;color:var(--gray-400)">Cost (USD)</div>
+          </div>
         </div>
       </div>
-    </div>
-  `).join("");
-}
+    `).join("");
+  }
+  resultCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  toast("Usage stats loaded.");
+});
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 function escapeHtml(str) {
