@@ -546,24 +546,39 @@ function openDetailModal(record) {
   detailOverlay.hidden = false;
 }
 
-function closeDetailModal() {
-  detailOverlay.hidden = true;
-  currentDetailId = null;
-}
-
-function onDetailOverlay(e) {
-  if (e.target === detailOverlay || e.target === document.getElementById("detailModal")) {
-    // Only close when tapping the dark background, not inside the modal
-    if (e.target === detailOverlay) closeDetailModal();
+// ─── GLOBAL CLOSE HANDLER ──────────────────────────────────────────────────
+// Single capture-phase listener for all modals — most reliable on mobile.
+document.addEventListener("pointerdown", (e) => {
+  // Detail overlay
+  if (!detailOverlay.hidden) {
+    const closeBtn = e.target.closest("#detailCloseBtn");
+    if (closeBtn || e.target === detailOverlay) {
+      detailOverlay.hidden = true;
+      currentDetailId = null;
+      return;
+    }
   }
-}
+  // Dashboard overlay
+  if (!dashboardOverlay.hidden) {
+    const closeBtn = e.target.closest("#dashboardCloseBtn");
+    if (closeBtn || e.target === dashboardOverlay) {
+      dashboardOverlay.hidden = true;
+      return;
+    }
+  }
+  // History panel
+  if (historyPanel.classList.contains("open")) {
+    const closeBtn = e.target.closest("#historyCloseBtn");
+    if (closeBtn || e.target === panelOverlay) {
+      historyPanel.classList.remove("open");
+      historyPanel.setAttribute("aria-hidden", "true");
+      panelOverlay.hidden = true;
+      return;
+    }
+  }
+}, { capture: true, passive: true });
 
-// Bind multiple events for maximum mobile compatibility
-["pointerdown", "click"].forEach((ev) => {
-  detailCloseBtn.addEventListener(ev, closeDetailModal);
-  detailOverlay.addEventListener(ev, onDetailOverlay);
-});
-
+// ─── Detail modal buttons ─────────────────────────────────────────────────
 detailCopyBtn.addEventListener("click", () => {
   const text = detailBody.innerText;
   navigator.clipboard.writeText(text).then(() => toast("Copied 📋", "success"));
@@ -579,32 +594,13 @@ detailDeleteBtn.addEventListener("click", async () => {
   toast("Deleted.", "success");
 });
 
-historyToggleBtn.addEventListener("pointerdown", () => {
+// ─── History toggle ────────────────────────────────────────────────────────
+historyToggleBtn.addEventListener("click", () => {
+  const opening = !historyPanel.classList.contains("open");
   historyPanel.classList.toggle("open");
-  historyPanel.setAttribute("aria-hidden", String(!historyPanel.classList.contains("open")));
-  panelOverlay.hidden = !historyPanel.classList.contains("open");
-  if (historyPanel.classList.contains("open")) refreshHistoryPanel();
-});
-
-// ─── Close helpers ─────────────────────────────────────────────────────────
-function closeHistory() {
-  historyPanel.classList.remove("open");
-  historyPanel.setAttribute("aria-hidden", "true");
-  panelOverlay.hidden = true;
-}
-
-function closeDashboard(e) {
-  if (!e || e.target === dashboardOverlay || e.target.id === "dashboardCloseBtn" || e.target.closest(".icon-btn")) {
-    dashboardOverlay.hidden = true;
-  }
-}
-
-// Bind both events for mobile reliability
-["pointerdown", "click"].forEach((ev) => {
-  historyCloseBtn.addEventListener(ev, closeHistory);
-  panelOverlay.addEventListener(ev, closeHistory);
-  dashboardCloseBtn.addEventListener(ev, closeDashboard);
-  dashboardOverlay.addEventListener(ev, closeDashboard);
+  historyPanel.setAttribute("aria-hidden", String(!opening));
+  panelOverlay.hidden = !opening;
+  if (opening) refreshHistoryPanel();
 });
 
 clearHistoryBtn.addEventListener("click", async () => {
