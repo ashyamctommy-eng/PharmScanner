@@ -640,6 +640,59 @@ body {
   color: var(--accent-dark);
   font-style: italic;
 }
+/* ─── Bold italic (questions) — purple, distinct from answers ──── */
+.result-body strong em,
+.result-body em strong {
+  color: #7c3aed;
+  font-weight: 700;
+  font-style: italic;
+  background: linear-gradient(to right, transparent, rgba(124,58,237,0.07), transparent);
+  padding: 0 0.15em;
+}
+/* ─── Code (formulas, equations) — amber pop ────────────────────── */
+.result-body code {
+  background: #fef3c7;
+  padding: 0.12em 0.42em;
+  border-radius: 5px;
+  font-size: 0.87em;
+  font-family: 'Courier New', Courier, monospace;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  font-weight: 600;
+}
+/* ─── Pre blocks (multi-line formulas) — darker amber ──────────── */
+.result-body pre {
+  background: #fffbeb;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.88em;
+  border: 1.5px solid #fde68a;
+  margin: 0.7em 0;
+}
+.result-body pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  border: none;
+  color: #78350f;
+}
+/* ─── Ordered lists for calculation steps — numbered flow ──────── */
+.result-body ol {
+  padding-left: 1.6rem;
+  margin: 0.6em 0;
+  list-style: decimal;
+}
+.result-body ol li {
+  margin-bottom: 0.4em;
+  padding-left: 0.3em;
+  line-height: 1.65;
+}
+/* ─── Final answer highlight ────────────────────────────────────── */
+.result-body strong:has(> em:only-child),
+.result-body em:has(> strong:only-child) {
+  /* Handled by the strong em / em strong rule above */
+}
 .result-body ul,.result-body ol { padding-left: 1.4rem; margin-bottom: 0.7em; }
 .result-body li { margin-bottom: 0.25em; }
 .result-body code {
