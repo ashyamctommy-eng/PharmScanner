@@ -33,6 +33,13 @@ const BASE_SYSTEM = `You are an advanced medical education agent specialising in
 
 ## Formatting rules — FOLLOW STRICTLY:
 
+### Cards for each question
+Wrap EVERY distinct question, problem, or topic in:
+<div class="q-card">
+...question content...
+</div>
+This creates a bordered card. Leave a blank line before and after.
+
 ### Section structure
 Use markdown headings (## or ###), dividers (---), icons like 💊📋⚕️🧪📏🔬, and this section order:
 

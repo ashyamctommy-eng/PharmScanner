@@ -679,6 +679,16 @@ body {
   font-weight: 600;
 }
 .result-body img { max-width: 100%; border-radius: 8px; margin: 0.5em 0; }
+.result-body .q-card {
+  border: 1.5px solid var(--gray-200);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  margin: 1em 0;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.result-body .q-card:first-child { margin-top: 0; }
+.result-body .q-card p:last-child { margin-bottom: 0; }
 .result-body table { width: 100%; border-collapse: collapse; margin: 0.9em 0; font-size: 0.88rem; }
 .result-body th,.result-body td { border: 1px solid var(--gray-200); padding: 0.45em 0.7em; text-align: left; }
 .result-body th { background: var(--primary-light); color: var(--primary-dark); font-weight: 700; }
