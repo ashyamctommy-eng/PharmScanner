@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   app.js — PharmaScan KE v2  ·  Main orchestrator
+   app.js — PharmaScan KE v2.2  ·  Main orchestrator
    Wires: camera · multi-image · mode/tier · SSE streaming · IndexedDB
           history panel · usage dashboard · offline queue · pHash cache
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -682,10 +682,15 @@ if (progressBtn) {
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 function modeLabel(m) {
-  return { general:"General", pharmacology:"Pharmacology", pharmaceutics:"Pharmaceutics",
+  return {
+    general:"General", pharmacology:"🧬 Pharmacology", pharmaceutics:"💊 Pharmaceutics",
     chem_org:"🧪 Org. Chem", chem_phys:"⚗️ Phys. Chem", pharmacognosy:"🌿 Pharmacognosy",
-    ppb_law:"PPB/Law", microbiology:"Microbiology", clinical:"Clinical", quiz:"🧪 Quiz" }[m] || m;
+    ppb_law:"⚖️ PPB/Law", microbiology:"🔬 Microbiology", clinical:"🏥 Clinical",
+    anatomy:"🧍 Anatomy & Physiology", biochemistry:"🧫 Biochemistry",
+    compounding:"⚗️ Compounding", public_health:"🌍 Public Health", quiz:"🧪 Quiz"
+  }[m] || m;
 }
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -711,15 +716,32 @@ function formatTokens(n) {
   return String(n);
 }
 
-// ─── Safe markdown render (fallback if CDN fails) ────────────────────────────
+// ─── Safe markdown render (fallback if CDN fails) — FIXED v2.2 ──────────────
 function renderMd(text) {
-  try { return (typeof marked !== 'undefined' && marked.parse) ? marked.parse(text) : text.replace(/\n/g, '<br>'); } catch { return text.replace(/\n/g, '<br>'); }
+  try {
+    return (typeof window.marked !== 'undefined' && window.marked.parse)
+      ? window.marked.parse(text, { breaks: true, gfm: true })
+      : text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+             .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+             .replace(/`([^`]+)`/g, '<code>$1</code>')
+             .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+             .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+             .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+             .replace(/\n/g, '<br>');
+  } catch {
+    return text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+               .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+               .replace(/`([^`]+)`/g, '<code>$1</code>')
+               .replace(/\n/g, '<br>');
+  }
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 (async function boot() {
-  // Configure marked for safe rendering
-  if (typeof marked !== 'undefined') marked.setOptions({ breaks: true, gfm: true });
+  // Configure window.marked for safe rendering (if available)
+  if (typeof window.marked !== 'undefined') {
+    window.marked.setOptions({ breaks: true, gfm: true });
+  }
 
   await initCamera();
   await refreshProviderStatus();
