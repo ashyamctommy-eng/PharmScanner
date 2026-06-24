@@ -489,10 +489,12 @@ body {
   border: none;
   font-size: 1.35rem;
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0.35rem 0.5rem;
   border-radius: var(--radius-xs);
   transition: background var(--transition);
   line-height: 1;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .icon-btn:hover { background: var(--gray-100); }
 

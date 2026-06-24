@@ -546,9 +546,14 @@ function openDetailModal(record) {
   detailOverlay.hidden = false;
 }
 
-detailCloseBtn.addEventListener("click", () => { detailOverlay.hidden = true; currentDetailId = null; });
-detailOverlay.addEventListener("click", (e) => {
-  if (e.target === detailOverlay) { detailOverlay.hidden = true; }
+function closeDetailModal() {
+  detailOverlay.hidden = true;
+  currentDetailId = null;
+}
+
+detailCloseBtn.addEventListener("pointerdown", closeDetailModal);
+detailOverlay.addEventListener("pointerdown", (e) => {
+  if (e.target === detailOverlay) closeDetailModal();
 });
 
 detailCopyBtn.addEventListener("click", () => {
@@ -566,19 +571,19 @@ detailDeleteBtn.addEventListener("click", async () => {
   toast("Deleted.", "success");
 });
 
-historyToggleBtn.addEventListener("click", () => {
+historyToggleBtn.addEventListener("pointerdown", () => {
   historyPanel.classList.toggle("open");
   historyPanel.setAttribute("aria-hidden", String(!historyPanel.classList.contains("open")));
   panelOverlay.hidden = !historyPanel.classList.contains("open");
   if (historyPanel.classList.contains("open")) refreshHistoryPanel();
 });
 
-historyCloseBtn.addEventListener("click", () => {
+historyCloseBtn.addEventListener("pointerdown", () => {
   historyPanel.classList.remove("open");
   panelOverlay.hidden = true;
 });
 
-panelOverlay.addEventListener("click", () => {
+panelOverlay.addEventListener("pointerdown", () => {
   historyPanel.classList.remove("open");
   panelOverlay.hidden = true;
 });
@@ -596,8 +601,8 @@ dashboardBtn.addEventListener("click", async () => {
   dashboardOverlay.hidden = false;
 });
 
-dashboardCloseBtn.addEventListener("click", () => { dashboardOverlay.hidden = true; });
-dashboardOverlay.addEventListener("click", (e) => {
+dashboardCloseBtn.addEventListener("pointerdown", () => { dashboardOverlay.hidden = true; });
+dashboardOverlay.addEventListener("pointerdown", (e) => {
   if (e.target === dashboardOverlay) dashboardOverlay.hidden = true;
 });
 
