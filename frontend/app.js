@@ -521,43 +521,38 @@ historyList.addEventListener("click", async (e) => {
   const records = await historyGetAll({ limit: 200 });
   const record  = records.find((r) => r.id === id);
   if (!record) return;
-  openDetailModal(record);
+
+  // Load straight into main result card — no modal
+  resultCard.hidden = false;
+  resultBody.innerHTML = marked.parse(record.analysisText || "");
+  lastAnalysisText = record.analysisText || "";
+  lastAnalysisMeta = {
+    provider: record.provider || "",
+    model: record.model || "",
+    inputTokens: record.inputTokens || 0,
+    outputTokens: record.outputTokens || 0,
+  };
+  renderMetaPills({ ...lastAnalysisMeta, fromCache: false });
+  resultCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+  // Close the history panel
+  historyPanel.classList.remove("open");
+  historyPanel.setAttribute("aria-hidden", "true");
+  panelOverlay.hidden = true;
+
+  toast("Loaded from history.");
 });
 
-function openDetailModal(record) {
-  currentDetailId = record.id;
-
-  // Thumbnails
-  const thumbs = record.allThumbnails?.length ? record.allThumbnails : [record.thumbnailDataUri].filter(Boolean);
-  detailThumbRow.innerHTML = thumbs
-    .filter(Boolean)
-    .map((t) => `<img src="${t}" alt="page" />`)
-    .join("");
-
-  detailMeta.innerHTML = `
-    <span class="meta-pill">${formatDate(record.createdAt)}</span>
-    <span class="meta-pill">${record.mode}</span>
-    <span class="meta-pill ${record.provider}">${record.provider || "–"}</span>
-    ${record.model ? `<span class="meta-pill">${record.model}</span>` : ""}
-    ${record.tag ? `<span class="meta-pill cached">${escapeHtml(record.tag)}</span>` : ""}
-  `;
-
-  detailBody.innerHTML = marked.parse(record.analysisText || "");
-  detailOverlay.hidden = false;
-}
-
 // ─── GLOBAL CLOSE HANDLER ──────────────────────────────────────────────────
-// Single capture-phase listener for all modals — most reliable on mobile.
+// Closes dashboard modal and history panel when tapping outside.
 document.addEventListener("pointerdown", (e) => {
-  // Detail overlay
-  if (!detailOverlay.hidden) {
-    const closeBtn = e.target.closest("#detailCloseBtn");
-    if (closeBtn || e.target === detailOverlay) {
-      detailOverlay.hidden = true;
-      currentDetailId = null;
+  // Dashboard overlay
+  if (!dashboardOverlay.hidden) {
+    const closeBtn = e.target.closest("#dashboardCloseBtn");
+    if (closeBtn || e.target === dashboardOverlay) {
+      dashboardOverlay.hidden = true;
       return;
     }
-  }
   // Dashboard overlay
   if (!dashboardOverlay.hidden) {
     const closeBtn = e.target.closest("#dashboardCloseBtn");
@@ -577,22 +572,6 @@ document.addEventListener("pointerdown", (e) => {
     }
   }
 }, { capture: true, passive: true });
-
-// ─── Detail modal buttons ─────────────────────────────────────────────────
-detailCopyBtn.addEventListener("click", () => {
-  const text = detailBody.innerText;
-  navigator.clipboard.writeText(text).then(() => toast("Copied 📋", "success"));
-});
-
-detailDeleteBtn.addEventListener("click", async () => {
-  if (!currentDetailId) return;
-  if (!confirm("Delete this saved scan?")) return;
-  await historyDelete(currentDetailId);
-  detailOverlay.hidden = true;
-  currentDetailId = null;
-  await refreshHistoryPanel();
-  toast("Deleted.", "success");
-});
 
 // ─── History toggle ────────────────────────────────────────────────────────
 historyToggleBtn.addEventListener("click", () => {
