@@ -1,0 +1,322 @@
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import rateLimit from "express-rate-limit";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Environment & validation
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PORT              = parseInt(process.env.PORT, 10) || 3000;
+const GEMINI_API_KEY    = process.env.GEMINI_API_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
+if (!GEMINI_API_KEY && !ANTHROPIC_API_KEY) {
+  console.error("FATAL: At least one of GEMINI_API_KEY or ANTHROPIC_API_KEY must be set.");
+  process.exit(1);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI clients
+// ─────────────────────────────────────────────────────────────────────────────
+
+const gemini    = GEMINI_API_KEY    ? new GoogleGenerativeAI(GEMINI_API_KEY)                     : null;
+const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY })               : null;
+
+// Model routing
+const GEMINI_DEEP   = process.env.GEMINI_MODEL_DEEP  || "gemini-1.5-pro";
+const GEMINI_QUICK  = process.env.GEMINI_MODEL_QUICK || "gemini-1.5-flash";
+const CLAUDE_MODEL  = process.env.CLAUDE_MODEL       || "claude-3-haiku-20240307";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Syllabus modes
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BASE_SYSTEM = `You are an advanced medical education agent specialising in the Kenya National Examinations Council (KNEC) Diploma in Pharmaceutical Technology curriculum and Pharmacy and Poisons Board (PPB) guidelines. Analyse the provided image and deliver a structured breakdown. Jump straight to the analysis without conversational filler using this format:
+
+1. **Identified Concept**: State the drug class, physiological system, or legal framework involved.
+2. **Systematic Breakdown**: Solve or explain the problem step-by-step with flawless logic.
+3. **Clinical/Practical Note**: Provide a brief, real-world context relevant to a practicing pharmacy technologist in Kenya.`;
+
+const MODE_ADDONS = {
+  pharmacology: `\n\nFOCUS: Pharmacology mode — classify by drug class, mechanism of action, receptor interactions, pharmacokinetics (ADME), and adverse effects. Reference Kenyan Essential Medicines List (KEML) where applicable.`,
+  pharmaceutics: `\n\nFOCUS: Pharmaceutics & Calculations mode — show ALL mathematical steps in full with SI units. Verify every dose against standard references. Flag any value that exceeds safe paediatric/adult thresholds.`,
+  ppb_law: `\n\nFOCUS: PPB / Legal & Regulatory mode — cite the relevant section of the Pharmacy and Poisons Act (Cap 244, Kenya), applicable schedules, and licensing requirements. Be precise about legal obligations.`,
+  microbiology: `\n\nFOCUS: Microbiology & Sterilisation mode — identify organisms, antibiotic coverage, resistance patterns, and sterilisation/aseptic technique relevant to Kenyan hospital pharmacy.`,
+  clinical: `\n\nFOCUS: Clinical Pharmacy mode — focus on patient counselling points, drug interactions, contraindications, and monitoring parameters a pharmacy technologist in Kenya would manage.`,
+  general: ``,
+};
+
+function buildSystemPrompt(mode) {
+  return BASE_SYSTEM + (MODE_ADDONS[mode] || "");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SSE helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function sseSetup(res) {
+  res.setHeader("Content-Type",  "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection",    "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+}
+
+function sseWrite(res, data) {
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Parse a data-URI into { mimeType, base64 }
+// ─────────────────────────────────────────────────────────────────────────────
+
+function parseDataUri(dataUri) {
+  const comma = dataUri.indexOf(",");
+  if (comma === -1) return { mimeType: "image/jpeg", base64: dataUri };
+  const meta = dataUri.slice(5, comma); // drop "data:"
+  const [mimeType] = meta.split(";");
+  return { mimeType: mimeType || "image/jpeg", base64: dataUri.slice(comma + 1) };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gemini streaming — primary provider
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function streamGemini({ res, images, systemPrompt, modelName, userNote }) {
+  const text = userNote
+    ? `Analyse these pharmacy curriculum documents. Additional context: ${userNote}`
+    : "Analyse this pharmacy curriculum document, exam question, or study resource:";
+
+  const parts = [
+    { text },
+    ...images.map((uri) => {
+      const { mimeType, base64 } = parseDataUri(uri);
+      return { inlineData: { mimeType, data: base64 } };
+    }),
+  ];
+
+  const genModel = gemini.getGenerativeModel({
+    model: modelName,
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 2048,
+    },
+  });
+
+  const result = await genModel.generateContentStream({
+    contents: [{ role: "user", parts }],
+  });
+
+  // Gemini streaming — each chunk provides incremental text via chunk.text()
+  let fullText = "";
+  for await (const chunk of result.stream) {
+    const t = chunk.text();
+    if (t) {
+      fullText += t;
+      sseWrite(res, { text: t });
+    }
+  }
+
+  // Gemini doesn't expose token counts in the stream reliably via SDK,
+  // so we estimate based on character count
+  const estInputTokens  = Math.ceil(parts.reduce((s, p) => {
+    if (p.text) return s + p.text.length / 4;
+    // Estimate image tokens: ~258 per image
+    if (p.inlineData) return s + 258;
+    return s;
+  }, 0));
+  const estOutputTokens = Math.ceil(fullText.length / 4);
+
+  sseWrite(res, {
+    done: true,
+    provider: "gemini",
+    model: modelName,
+    inputTokens: estInputTokens,
+    outputTokens: estOutputTokens,
+  });
+  res.end();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Claude streaming — fallback
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildClaudeContent(images, userNote) {
+  const text = userNote
+    ? `Analyse these pharmacy curriculum documents. Additional context: ${userNote}`
+    : "Analyse this pharmacy curriculum document, exam question, or study resource:";
+
+  const content = [
+    ...images.map((uri) => {
+      const { mimeType, base64 } = parseDataUri(uri);
+      return { type: "image", source: { type: "base64", media_type: mimeType, data: base64 } };
+    }),
+    { type: "text", text },
+  ];
+  return [{ role: "user", content }];
+}
+
+async function streamClaude({ res, images, systemPrompt, modelName, userNote }) {
+  const stream = await anthropic.messages.create({
+    model: modelName,
+    max_tokens: 2048,
+    temperature: 0.2,
+    system: systemPrompt,
+    messages: buildClaudeContent(images, userNote),
+    stream: true,
+  });
+
+  let inputTokens = 0, outputTokens = 0;
+  for await (const event of stream) {
+    if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+      sseWrite(res, { text: event.delta.text });
+    }
+    if (event.type === "message_delta" && event.usage) {
+      outputTokens = event.usage.output_tokens || 0;
+    }
+    if (event.type === "message_start" && event.message?.usage) {
+      inputTokens = event.message.usage.input_tokens || 0;
+    }
+  }
+
+  sseWrite(res, {
+    done: true,
+    provider: "claude",
+    model: modelName,
+    inputTokens,
+    outputTokens,
+  });
+  res.end();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Core analysis — Gemini primary → Claude fallback
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function streamAnalysis({ res, images, mode, tier, userNote }) {
+  const systemPrompt = buildSystemPrompt(mode);
+  const geminiModel  = tier === "quick" ? GEMINI_QUICK : GEMINI_DEEP;
+
+  // ── Attempt 1: Gemini (primary) ────────────────────────────────────────
+  if (gemini) {
+    try {
+      sseWrite(res, { status: `Contacting Gemini (${geminiModel})…` });
+      sseWrite(res, { status: "Analysing…", provider: "gemini", model: geminiModel });
+      await streamGemini({ res, images, systemPrompt, modelName: geminiModel, userNote });
+      return;
+    } catch (err) {
+      console.error(`Gemini error: ${err.message}`);
+      // Only fall through to Claude on transient/server errors
+      const transient = [429, 500, 503].includes(err.status) ||
+                        err.message?.includes("SAFETY") ||
+                        err.message?.includes("quota") ||
+                        err.message?.includes("RESOURCE_EXHAUSTED");
+      if (!transient) {
+        sseWrite(res, { error: `Gemini error: ${err.message}` });
+        res.end();
+        return;
+      }
+      console.warn("Gemini transient error — falling back to Claude…");
+      sseWrite(res, { status: "Gemini busy — switching to Claude backup…" });
+    }
+  }
+
+  // ── Attempt 2: Claude Haiku fallback ──────────────────────────────────
+  if (anthropic) {
+    try {
+      sseWrite(res, { status: "Contacting Claude…", provider: "claude" });
+      await streamClaude({ res, images, systemPrompt, modelName: CLAUDE_MODEL, userNote });
+      return;
+    } catch (err) {
+      console.error("Claude fallback error:", err.message);
+      sseWrite(res, { error: `All providers failed. Last error: ${err.message}` });
+      res.end();
+      return;
+    }
+  }
+
+  sseWrite(res, { error: "No AI providers are configured. Check your API keys." });
+  res.end();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Express app
+// ─────────────────────────────────────────────────────────────────────────────
+
+const app = express();
+
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.use(cors({ origin: "*" }));
+app.use(morgan("short"));
+app.use(express.json({ limit: "30mb" }));
+
+const limiter = rateLimit({
+  windowMs: 60_000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please wait a moment." },
+});
+app.use("/api", limiter);
+
+app.use(express.static("frontend"));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/analyze
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.post("/api/analyze", async (req, res) => {
+  const { images, image, mode = "general", tier = "deep", userNote = "" } = req.body;
+
+  const rawImages = images || (image ? [image] : null);
+
+  if (!rawImages || !Array.isArray(rawImages) || rawImages.length === 0) {
+    return res.status(400).json({ error: "Provide 'images' (array) or 'image' (string)." });
+  }
+  if (rawImages.length > 10) {
+    return res.status(400).json({ error: "Maximum 10 images per request." });
+  }
+
+  const dataUris = rawImages.map((img) =>
+    img.startsWith("data:") ? img : `data:image/jpeg;base64,${img}`
+  );
+
+  sseSetup(res);
+  await streamAnalysis({ res, images: dataUris, mode, tier, userNote });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/models
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.get("/api/models", (_req, res) => {
+  res.json({
+    gemini: !!gemini,
+    claude: !!anthropic,
+    models: {
+      deep:   GEMINI_DEEP,
+      quick:  GEMINI_QUICK,
+      claude: CLAUDE_MODEL,
+    },
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Health
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.get("/health", (_req, res) => res.json({ status: "ok", ts: Date.now() }));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Start
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.listen(PORT, "0.0.0.0", () => {
+  const providers = [gemini && "Gemini", anthropic && "Claude"].filter(Boolean).join(" + ");
+  console.log(`PharmaScan API v2.1 listening on :${PORT}  providers: ${providers}`);
+});

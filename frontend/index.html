@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PharmaScan KE — KNEC Pharmacy Scanner</title>
+  <meta name="description" content="Scan and analyse Kenya KNEC Diploma in Pharmaceutical Technology resources using AI." />
+  <meta name="theme-color" content="#064663" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.4/marked.min.js"></script>
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══════════════════════════════════════════════════════════ -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <span class="logo">💊 PharmaScan<span class="logo-ke">KE</span></span>
+        <span class="tagline">KNEC · Pharmaceutical Technology</span>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="historyToggleBtn" title="History" aria-label="Toggle history panel">
+          🕘
+          <span class="badge" id="historyBadge" hidden>0</span>
+        </button>
+        <button class="icon-btn" id="dashboardBtn" title="Usage dashboard" aria-label="Usage dashboard">📊</button>
+      </div>
+    </div>
+
+    <!-- Provider status bar -->
+    <div class="provider-bar" id="providerBar">
+      <span class="provider-pill" id="pillGemini" data-active="false">⬤ Gemini (free)</span>
+      <span class="provider-pill" id="pillClaude" data-active="false">⬤ Claude</span>
+      <span class="offline-pill" id="offlinePill" hidden>📵 Offline — scans queued</span>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN ═══════════════════════════════════════════════════════════ -->
+  <main class="container">
+
+    <!-- ── SCAN CARD ─────────────────────────────────────────────────── -->
+    <section class="card scan-card">
+      <div class="card-header">
+        <h2>📷 Scan Document</h2>
+        <p class="card-sub">Align your document inside the scan box. Supports up to 10 pages.</p>
+      </div>
+
+      <!-- Camera viewport -->
+      <div class="camera-wrapper" id="cameraWrapper">
+        <video id="cameraFeed" autoplay playsinline muted></video>
+
+        <!-- Blur warning overlay -->
+        <div class="blur-warning" id="blurWarning" hidden>
+          <span>⚠️ Image blurry — hold camera steadier</span>
+        </div>
+
+        <!-- Scan-box overlay -->
+        <div class="scan-overlay">
+          <div class="scan-box">
+            <span class="scan-corner tl"></span>
+            <span class="scan-corner tr"></span>
+            <span class="scan-corner bl"></span>
+            <span class="scan-corner br"></span>
+            <div class="scan-line"></div>
+          </div>
+        </div>
+
+        <!-- Capture button (shown when camera is active) -->
+        <div class="camera-controls">
+          <button id="captureBtn" class="btn btn-capture">📸 Capture</button>
+        </div>
+
+        <!-- Upload fallback (shown when camera denied) -->
+        <div class="upload-fallback" id="uploadFallback" hidden>
+          <label for="fileInput" class="btn btn-secondary">📁 Choose Image</label>
+          <input type="file" id="fileInput" accept="image/*" multiple hidden />
+        </div>
+      </div>
+
+      <!-- Multi-image captured strip -->
+      <div class="image-strip-wrapper" id="imageStripWrapper" hidden>
+        <div class="image-strip-header">
+          <span class="strip-label" id="stripLabel">0 pages captured</span>
+          <button class="btn-link" id="clearStripBtn">✕ Clear all</button>
+        </div>
+        <div class="image-strip" id="imageStrip">
+          <!-- Thumbnails injected here -->
+        </div>
+        <button id="addMoreBtn" class="btn btn-outline btn-sm">+ Add More Pages</button>
+      </div>
+    </section>
+
+    <!-- ── SETTINGS CARD (mode + tier) ──────────────────────────────── -->
+    <section class="card settings-card">
+      <div class="settings-row">
+
+        <!-- Syllabus mode -->
+        <div class="setting-group">
+          <label class="setting-label">📚 Syllabus Mode</label>
+          <div class="mode-pills" id="modePills">
+            <button class="mode-pill active" data-mode="general">General</button>
+            <button class="mode-pill" data-mode="pharmacology">Pharmacology</button>
+            <button class="mode-pill" data-mode="pharmaceutics">Pharmaceutics</button>
+            <button class="mode-pill" data-mode="ppb_law">PPB / Law</button>
+            <button class="mode-pill" data-mode="microbiology">Microbiology</button>
+            <button class="mode-pill" data-mode="clinical">Clinical</button>
+          </div>
+        </div>
+
+        <!-- Tier toggle -->
+        <div class="setting-group">
+          <label class="setting-label">⚡ Analysis Depth</label>
+          <div class="tier-toggle" id="tierToggle">
+            <button class="tier-btn" data-tier="quick">
+              <span class="tier-icon">⚡</span>
+              <span class="tier-name">Quick</span>
+              <span class="tier-sub">gemini-1.5-flash · cheap</span>
+            </button>
+            <button class="tier-btn active" data-tier="deep">
+              <span class="tier-icon">🔬</span>
+              <span class="tier-name">Deep</span>
+              <span class="tier-sub">gemini-1.5-pro · thorough</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Optional note -->
+      <div class="note-row">
+        <textarea
+          id="userNote"
+          class="user-note"
+          placeholder="Optional: add context (e.g. 'This is a 2023 KNEC past paper, question 4b')"
+          rows="2"
+        ></textarea>
+      </div>
+
+      <!-- Analyze button -->
+      <div class="analyze-row">
+        <button id="analyzeBtn" class="btn btn-primary btn-analyze" disabled>
+          🔍 Analyse <span id="analyzeBtnCount"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ── STATUS BAR ────────────────────────────────────────────────── -->
+    <div class="status-bar" id="statusBar" hidden>
+      <span class="status-spinner"></span>
+      <span id="statusText">Analysing…</span>
+      <button class="btn-cancel" id="cancelBtn" title="Cancel">✕</button>
+    </div>
+
+    <!-- ── RESULT CARD ───────────────────────────────────────────────── -->
+    <section class="card result-card" id="resultCard" hidden>
+      <div class="card-header result-header">
+        <h2>📋 Analysis</h2>
+        <div class="result-meta" id="resultMeta"><!-- provider badge injected --></div>
+      </div>
+      <div class="result-body" id="resultBody"></div>
+      <div class="result-actions">
+        <button id="copyBtn"  class="btn btn-outline">📄 Copy</button>
+        <button id="saveBtn"  class="btn btn-outline">💾 Save to History</button>
+        <button id="clearBtn" class="btn btn-outline">✕ Clear</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══ HISTORY PANEL (slide-in) ════════════════════════════════════════ -->
+  <aside class="history-panel" id="historyPanel" aria-hidden="true">
+    <div class="panel-header">
+      <h3>🕘 Scan History</h3>
+      <div class="panel-header-actions">
+        <button class="btn-link danger" id="clearHistoryBtn">Clear all</button>
+        <button class="icon-btn" id="historyCloseBtn">✕</button>
+      </div>
+    </div>
+    <div class="history-list" id="historyList">
+      <p class="empty-state">No scans yet.</p>
+    </div>
+  </aside>
+  <div class="panel-overlay" id="panelOverlay" hidden></div>
+
+  <!-- ═══ USAGE DASHBOARD MODAL ════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="dashboardOverlay" hidden>
+    <div class="modal" id="dashboardModal">
+      <div class="modal-header">
+        <h3>📊 Usage Dashboard</h3>
+        <button class="icon-btn" id="dashboardCloseBtn">✕</button>
+      </div>
+      <div class="modal-body" id="dashboardBody">
+        <!-- injected by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ HISTORY DETAIL MODAL ════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="detailOverlay" hidden>
+    <div class="modal modal-wide" id="detailModal">
+      <div class="modal-header">
+        <h3>📋 Saved Analysis</h3>
+        <button class="icon-btn" id="detailCloseBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-thumb-row" id="detailThumbRow"></div>
+        <div class="detail-meta" id="detailMeta"></div>
+        <div class="result-body" id="detailBody"></div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" id="detailCopyBtn">📄 Copy</button>
+          <button class="btn btn-outline danger" id="detailDeleteBtn">🗑 Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══════════════════════════════════════════════════════════ -->
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- ═══ FOOTER ══════════════════════════════════════════════════════════ -->
+  <footer class="app-footer">
+    <p>For educational use only. Verify all answers with your lecturers and official KNEC materials.</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
