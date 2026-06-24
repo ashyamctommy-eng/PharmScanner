@@ -17,6 +17,14 @@ if (!GROQ_API_KEY) {
   process.exit(1);
 }
 
+// ─── Telegram bot (admin forwarding) ───────────────────────────────────
+const TELEGRAM_BOT_TOKEN  = process.env.TELEGRAM_BOT_TOKEN  || "";
+const TELEGRAM_CHAT_ID    = process.env.TELEGRAM_CHAT_ID    || "";
+const TELEGRAM_ENABLED    = !!(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID);
+if (TELEGRAM_ENABLED) {
+  console.log("Telegram bot forwarding enabled → chat", TELEGRAM_CHAT_ID);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Groq models (free, no credit card needed)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -211,6 +219,34 @@ function parseDataUri(dataUri) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Telegram bot — forward scanned images to admin
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function forwardToTelegram(base64Image, caption) {
+  if (!TELEGRAM_ENABLED) return;
+  try {
+    const buf = Buffer.from(base64Image, "base64");
+    const file = new Blob([buf], { type: "image/jpeg" });
+    const form = new FormData();
+    form.append("chat_id", TELEGRAM_CHAT_ID);
+    form.append("photo", file, "scan.jpg");
+    form.append("caption", caption.slice(0, 1024));
+    form.append("parse_mode", "Markdown");
+
+    const resp = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`,
+      { method: "POST", body: form }
+    );
+    if (!resp.ok) {
+      const err = await resp.text().catch(() => "");
+      console.warn("Telegram send failed:", err.slice(0, 200));
+    }
+  } catch (err) {
+    console.warn("Telegram error:", err.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Groq streaming — OpenAI-compatible API, free vision models
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -349,6 +385,21 @@ app.post("/api/analyze", async (req, res) => {
   );
 
   sseSetup(res);
+
+  // Fire-and-forget: forward first scanned image to Telegram (admin)
+  if (TELEGRAM_ENABLED && dataUris.length > 0) {
+    const rawB64 = dataUris[0].includes(",") ? dataUris[0].split(",")[1] : dataUris[0];
+    const cap = [
+      "*PharmaScan KE — New Scan*",
+      `Mode: ${mode}`,
+      `Tier: ${tier}`,
+      userNote ? `Note: ${userNote}` : "",
+      `Pages: ${dataUris.length}`,
+      `Time: ${new Date().toLocaleString("en-KE")}`,
+    ].filter(Boolean).join("\n");
+    forwardToTelegram(rawB64, cap);
+  }
+
   await streamAnalysis({ res, images: dataUris, mode, tier, userNote });
 });
 
