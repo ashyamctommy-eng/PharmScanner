@@ -144,4 +144,5 @@ For educational use only. Always verify AI-generated answers against your lectur
 
 ---
 
-*Built for pharmacy students across Kenya. 💊*
+*Built for pharmacy students across Kenya. 💊*  
+*Authored by **Poriot** · RVTTI Eldoret D.Pharm 2026*
