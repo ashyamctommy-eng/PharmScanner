@@ -22,8 +22,8 @@ if (!GROQ_API_KEY) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GROQ_BASE     = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_DEEP     = process.env.GROQ_MODEL_DEEP  || "llama-3.2-90b-vision-preview";
-const GROQ_QUICK    = process.env.GROQ_MODEL_QUICK || "llama-3.2-11b-vision-preview";
+const GROQ_DEEP     = process.env.GROQ_MODEL_DEEP  || "meta-llama/llama-4-scout-17b-16e-instruct";
+const GROQ_QUICK    = process.env.GROQ_MODEL_QUICK || "meta-llama/llama-4-scout-17b-16e-instruct";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Syllabus modes
