@@ -440,6 +440,7 @@ saveBtn.addEventListener("click", async () => {
     });
     toast("Saved to history 💾", "success");
     await refreshHistoryPanel();
+    trackSubject(selectedMode); // update syllabus progress
   } catch (e) {
     toast("Save failed: " + e.message, "error");
   }
@@ -502,7 +503,7 @@ async function refreshHistoryPanel() {
       <div class="history-info">
         <div class="history-title">${escapeHtml(truncate(item.analysisText, 60))}</div>
         <div class="history-meta">
-          ${formatDate(item.createdAt)} · ${item.mode} · ${item.provider || ""}
+          ${formatDate(item.createdAt)} <span class="syllabus-badge">${modeLabel(item.mode)}</span>
         </div>
         ${item.tag ? `<span class="history-tag">${escapeHtml(item.tag)}</span>` : ""}
       </div>
@@ -584,7 +585,75 @@ dashboardBtn.addEventListener("click", async () => {
   toast("Usage stats loaded.");
 });
 
+// ─── DARK MODE ────────────────────────────────────────────────────────────────
+const darkModeBtn = document.getElementById("darkModeBtn");
+const prefersDark = localStorage.getItem("darkMode") === "true" ||
+  (window.matchMedia?.("(prefers-color-scheme:dark)").matches && localStorage.getItem("darkMode") !== "false");
+if (prefersDark) document.body.classList.add("dark");
+darkModeBtn.addEventListener("click", () => {
+  document.body.classList.toggle("dark");
+  localStorage.setItem("darkMode", document.body.classList.contains("dark"));
+});
+
+// ─── HISTORY SEARCH ──────────────────────────────────────────────────────────
+const historySearch = document.getElementById("historySearch");
+historySearch.addEventListener("input", () => {
+  const q = historySearch.value.toLowerCase().trim();
+  document.querySelectorAll(".history-item").forEach((el) => {
+    el.style.display = !q || el.textContent.toLowerCase().includes(q) ? "" : "none";
+  });
+});
+
+// ─── SHARE ────────────────────────────────────────────────────────────────────
+const shareBtn = document.getElementById("shareBtn");
+shareBtn.addEventListener("click", async () => {
+  const text = lastAnalysisText || resultBody.textContent || "";
+  if (!text) return toast("Nothing to share.", "error");
+  if (navigator.share) {
+    try { await navigator.share({ title: "PharmaScan KE Analysis", text }); } catch { /* cancelled */ }
+  } else {
+    await navigator.clipboard.writeText(text);
+    toast("📋 Copied — paste anywhere to share.");
+  }
+});
+
+// ─── SYLLABUS PROGRESS TRACKER ────────────────────────────────────────────────
+function trackSubject(mode) {
+  const key = "pharmascan_subject_counts";
+  const counts = JSON.parse(localStorage.getItem(key) || "{}");
+  counts[mode] = (counts[mode] || 0) + 1;
+  localStorage.setItem(key, JSON.stringify(counts));
+}
+
+function getSubjectProgress() {
+  return JSON.parse(localStorage.getItem("pharmascan_subject_counts") || "{}");
+}
+
+const progressBtn = document.getElementById("progressBtn");
+if (progressBtn) {
+  progressBtn.addEventListener("click", () => {
+    const counts = getSubjectProgress();
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    if (!total) return toast("No scans recorded yet.");
+
+    const lines = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => {
+        const label = modeLabel(k);
+        const pct = Math.round(v / total * 100);
+        const bar = "▓".repeat(Math.ceil(pct / 10)) + "░".repeat(10 - Math.ceil(pct / 10));
+        return `${label}: ${bar} ${v} scans`;
+      }).join("\n");
+
+    toast(`📊 Your progress (${total} total):\n${lines}`, null, 6000);
+  });
+}
+
 // ─── Utils ────────────────────────────────────────────────────────────────────
+function modeLabel(m) {
+  return { general:"General", pharmacology:"Pharmacology", pharmaceutics:"Pharmaceutics",
+    ppb_law:"PPB/Law", microbiology:"Microbiology", clinical:"Clinical", quiz:"🧪 Quiz" }[m] || m;
+}
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")

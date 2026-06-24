@@ -65,6 +65,12 @@ Real-world context relevant to a pharmacy technologist in Kenya. Use > blockquot
 - Use bullet lists for groups of items.
 - For flashcards/info summaries, use | **Term** | **Meaning** | style tables if helpful.
 
+### 🃏 Quick-Review Card
+At the VERY END of your analysis, add a summary card:
+<div class="q-card">
+**📌 Quick Review** — 2-3 bullet points max. Key formula, answer, or takeaway.
+</div>
+
 ### Tone
 Jump straight to the analysis. No greetings, no "Sure!" or "Here's your analysis". Just the formatted answer. Make it look like a polished study guide.`;
 
@@ -74,6 +80,7 @@ const MODE_ADDONS = {
   ppb_law: `\n\nFOCUS: PPB / Legal & Regulatory mode — cite the relevant section of the Pharmacy and Poisons Act (Cap 244, Kenya), applicable schedules, and licensing requirements. Be precise about legal obligations.`,
   microbiology: `\n\nFOCUS: Microbiology & Sterilisation mode — identify organisms, antibiotic coverage, resistance patterns, and sterilisation/aseptic technique relevant to Kenyan hospital pharmacy.`,
   clinical: `\n\nFOCUS: Clinical Pharmacy mode — focus on patient counselling points, drug interactions, contraindications, and monitoring parameters a pharmacy technologist in Kenya would manage.`,
+  quiz: `\n\nFOCUS: QUIZ MODE — Based ONLY on the content visible in the image, generate exactly 5 multiple-choice questions (A, B, C, D). Put each question in its own <div class="q-card">. After listing all 5, provide an answer key in a <div class="q-card" style="background:#f0fdf4;border-color:#22c55e"> with the correct answers and brief explanations. Do NOT include any other analysis — just the quiz and answer key.`,
   general: ``,
 };
 

@@ -41,6 +41,11 @@
             <line x1="2" y1="20" x2="22" y2="20"/>
           </svg>
         </button>
+        <button class="icon-btn" id="darkModeBtn" title="Dark mode">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -174,6 +179,7 @@
             <button class="mode-pill" data-mode="ppb_law">PPB / Law</button>
             <button class="mode-pill" data-mode="microbiology">Microbiology</button>
             <button class="mode-pill" data-mode="clinical">Clinical</button>
+            <button class="mode-pill" data-mode="quiz" style="background:var(--accent);color:white">🧪 Quiz</button>
           </div>
         </div>
 
@@ -278,6 +284,13 @@
           </svg>
           Save
         </button>
+        <button id="shareBtn" class="btn btn-outline">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+          Share
+        </button>
         <button id="clearBtn" class="btn btn-outline">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/>
@@ -318,6 +331,7 @@
         Scan History
       </h3>
       <div class="panel-header-actions">
+        <button class="btn-link" id="progressBtn" title="Progress">📊</button>
         <button class="btn-link danger" id="clearHistoryBtn">Clear all</button>
         <button class="icon-btn" id="historyCloseBtn" onclick="document.getElementById('historyPanel').classList.remove('open');document.getElementById('historyPanel').setAttribute('aria-hidden','true');document.getElementById('panelOverlay').setAttribute('hidden','')">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -326,6 +340,9 @@
           </svg>
         </button>
       </div>
+    </div>
+    <div class="history-search">
+      <input type="text" id="historySearch" placeholder="🔍 Search history..." />
     </div>
     <div class="history-list" id="historyList">
       <p class="empty-state">
