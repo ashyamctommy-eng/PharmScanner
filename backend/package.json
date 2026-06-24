@@ -1,14 +1,14 @@
 {
   "name": "pharmacy-scanner-api",
   "version": "2.1.0",
-  "description": "Kenya KNEC Pharmacy Scanner — Gemini primary + Claude Haiku fallback",
+  "description": "KNEC Pharmacy Scanner — Gemini only",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "dependencies": {},
+  "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
