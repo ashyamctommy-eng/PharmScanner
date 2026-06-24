@@ -686,9 +686,27 @@ body {
   margin: 1em 0;
   background: white;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  position: relative;
+  overflow: hidden;
+}
+/* Gradient accent strip on the left — blends into the card */
+.result-body .q-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--primary), var(--accent), #22c55e);
+  border-radius: 10px 0 0 10px;
 }
 .result-body .q-card:first-child { margin-top: 0; }
 .result-body .q-card p:last-child { margin-bottom: 0; }
+.result-body .q-card:first-of-type::before { background: linear-gradient(180deg, #0ea5e9, #22c55e); }
+.result-body .q-card:nth-of-type(2)::before { background: linear-gradient(180deg, #f59e0b, #ef4444); }
+.result-body .q-card:nth-of-type(3)::before { background: linear-gradient(180deg, #8b5cf6, #ec4899); }
+.result-body .q-card:nth-of-type(4)::before { background: linear-gradient(180deg, #22c55e, #0ea5e9); }
+.result-body .q-card:nth-of-type(5)::before { background: linear-gradient(180deg, #ef4444, #f59e0b); }
 
 /* ─── History search ──────────────────────────────────────────────────── */
 .history-search {
@@ -730,6 +748,7 @@ body.dark .app-header { background: linear-gradient(135deg,#0c4a6e,#1e293b); }
 body.dark .scan-box { border-color: var(--gray-200); background: var(--bg-card); }
 body.dark .card, body.dark .settings-card { background: var(--bg-card); border-color: var(--gray-200); }
 body.dark .result-body .q-card { background: var(--gray-100); border-color: var(--gray-200); }
+body.dark .result-body .q-card::before { opacity: 0.8; }
 body.dark .history-panel { background: var(--bg); border-left-color: var(--gray-200); }
 body.dark .history-item { background: var(--bg-card); border-color: var(--gray-200); }
 body.dark .history-item:hover { background: var(--gray-100); }
