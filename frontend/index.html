@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>PharmaScan KE — KNEC Pharmacy Scanner</title>
-  <meta name="description" content="Scan and analyse Kenya KNEC Diploma in Pharmaceutical Technology resources using AI." />
+  <title>PharmaScan KE — CDACC D.Pharm RVTTI Eldoret</title>
+  <meta name="description" content="Scan and analyse CDACC Diploma in Pharmaceutical Technology resources using AI — RVTTI Eldoret syllabus." />
   <meta name="theme-color" content="#064663" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/marked@15.0.4/marked.min.js"></script>
-  <script>if(typeof marked==='undefined')document.write('<script src="https://unpkg.com/marked@15.0.4/marked.min.js"><\/script>');</script>
+  <script>if(typeof window.marked==='undefined')document.write('<script src="https://unpkg.com/marked@15.0.4/marked.min.js"><\/script>');</script>
 </head>
 <body>
 
@@ -23,7 +23,7 @@
           </svg>
           PharmaScan<span class="logo-ke">KE</span>
         </span>
-        <span class="tagline">KNEC · Pharmaceutical Technology</span>
+        <span class="tagline">CDACC D.Pharm · RVTTI Eldoret</span>
       </div>
       <div class="header-actions">
         <button class="icon-btn" id="historyToggleBtn" title="History" aria-label="Toggle history panel">
@@ -174,14 +174,18 @@
           </label>
           <div class="mode-pills" id="modePills">
             <button class="mode-pill active" data-mode="general">General</button>
-            <button class="mode-pill" data-mode="pharmacology">Pharmacology</button>
-            <button class="mode-pill" data-mode="pharmaceutics">Pharmaceutics</button>
+            <button class="mode-pill" data-mode="pharmacology">🧬 Pharmacology</button>
+            <button class="mode-pill" data-mode="pharmaceutics">💊 Pharmaceutics</button>
             <button class="mode-pill" data-mode="chem_org">🧪 Org. Chem</button>
             <button class="mode-pill" data-mode="chem_phys">⚗️ Phys. Chem</button>
             <button class="mode-pill" data-mode="pharmacognosy">🌿 Pharmacognosy</button>
-            <button class="mode-pill" data-mode="microbiology">Microbiology</button>
-            <button class="mode-pill" data-mode="ppb_law">PPB / Law</button>
-            <button class="mode-pill" data-mode="clinical">Clinical</button>
+            <button class="mode-pill" data-mode="microbiology">🔬 Microbiology</button>
+            <button class="mode-pill" data-mode="ppb_law">⚖️ PPB / Law</button>
+            <button class="mode-pill" data-mode="clinical">🏥 Clinical</button>
+            <button class="mode-pill" data-mode="anatomy">🧍 Anatomy & Phys.</button>
+            <button class="mode-pill" data-mode="biochemistry">🧫 Biochemistry</button>
+            <button class="mode-pill" data-mode="compounding">⚗️ Compounding</button>
+            <button class="mode-pill" data-mode="public_health">🌍 Public Health</button>
             <button class="mode-pill" data-mode="quiz" style="background:var(--accent);color:white">🧪 Quiz</button>
           </div>
         </div>
@@ -202,7 +206,7 @@
                 </svg>
               </span>
               <span class="tier-name">Quick</span>
-              <span class="tier-sub">gemini-1.5-flash · cheap</span>
+              <span class="tier-sub">llama-4-scout · cheap</span>
             </button>
             <button class="tier-btn active" data-tier="deep">
               <span class="tier-icon">
@@ -214,7 +218,7 @@
                 </svg>
               </span>
               <span class="tier-name">Deep</span>
-              <span class="tier-sub">gemini-1.5-pro · thorough</span>
+              <span class="tier-sub">llama-4-scout · thorough</span>
             </button>
           </div>
         </div>
@@ -226,7 +230,7 @@
         <textarea
           id="userNote"
           class="user-note"
-          placeholder="Optional: add context (e.g. 'This is a 2023 KNEC past paper, question 4b')"
+          placeholder="Optional: add context (e.g. 'This is a RVTTI Eldoret past paper, question 4b on tablets')"
           rows="2"
         ></textarea>
       </div>
@@ -364,7 +368,7 @@
 
   <!-- ═══ FOOTER ══════════════════════════════════════════════════════ -->
   <footer class="app-footer">
-    <p>For educational use only. Verify all answers with your lecturers and official KNEC materials.</p>
+    <p>For educational use only. Verify all answers with your lecturers and official KNEC/CDACC materials.</p>
   </footer>
 
   <script type="module" src="app.js"></script>
