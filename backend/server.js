@@ -4,7 +4,6 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -24,7 +23,7 @@ if (!GEMINI_API_KEY && !ANTHROPIC_API_KEY) {
 // AI clients
 // ─────────────────────────────────────────────────────────────────────────────
 
-const gemini    = GEMINI_API_KEY    ? new GoogleGenerativeAI(GEMINI_API_KEY)                     : null;
+const gemini    = null; // removed SDK — using direct fetch instead
 const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY })               : null;
 
 // Model routing
@@ -99,45 +98,66 @@ async function streamGemini({ res, images, systemPrompt, modelName, userNote }) 
     }),
   ];
 
-  const genModel = gemini.getGenerativeModel({
-    model: modelName,
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 2048,
-    },
+  // Direct fetch — bypasses SDK, works with any API key
+  const url = `${GEMINI_BASE}/${modelName}:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
+    }),
   });
 
-  const result = await genModel.generateContentStream({
-    contents: [{ role: "user", parts }],
-  });
+  if (!response.ok) {
+    const errBody = await response.text().catch(() => "");
+    throw new Error(`Gemini API ${response.status}: ${errBody.slice(0, 300)}`);
+  }
 
-  // Gemini streaming — each chunk provides incremental text via chunk.text()
+  // Read SSE stream from direct API
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
   let fullText = "";
-  for await (const chunk of result.stream) {
-    const t = chunk.text();
-    if (t) {
-      fullText += t;
-      sseWrite(res, { text: t });
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const payload = line.slice(6).trim();
+      if (!payload || payload === "[DONE]") continue;
+
+      try {
+        const data = JSON.parse(payload);
+        // Standard Gemini stream: candidates[0].content.parts[0].text
+        const t = data?.candidates?.[0]?.content?.parts?.[0]?.text || data?.text;
+        if (t) {
+          fullText += t;
+          sseWrite(res, { text: t });
+        }
+      } catch { /* skip */ }
     }
   }
 
-  // Gemini doesn't expose token counts in the stream reliably via SDK,
-  // so we estimate based on character count
+  // Estimate token usage
   const estInputTokens  = Math.ceil(parts.reduce((s, p) => {
     if (p.text) return s + p.text.length / 4;
-    // Estimate image tokens: ~258 per image
     if (p.inlineData) return s + 258;
     return s;
   }, 0));
   const estOutputTokens = Math.ceil(fullText.length / 4);
 
   sseWrite(res, {
-    done: true,
-    provider: "gemini",
-    model: modelName,
-    inputTokens: estInputTokens,
-    outputTokens: estOutputTokens,
+    done: true, provider: "gemini", model: modelName,
+    inputTokens: estInputTokens, outputTokens: estOutputTokens,
   });
   res.end();
 }
