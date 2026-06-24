@@ -319,12 +319,12 @@ async function runAnalysis(images, mode, tier, userNote, isRetry = false) {
         if (data.text) {
           fullText += data.text;
           // Render markdown + live cursor
-          resultBody.innerHTML = marked.parse(fullText) + '<span class="cursor"></span>';
+          resultBody.innerHTML = renderMd(fullText) + '<span class="cursor"></span>';
           resultCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
         if (data.done) {
           // Remove cursor, set final state
-          resultBody.innerHTML = marked.parse(fullText);
+          resultBody.innerHTML = renderMd(fullText);
           lastAnalysisText = fullText;
           lastAnalysisMeta = {
             provider:     data.provider    || "openai",
@@ -395,7 +395,7 @@ function renderMetaPills({ provider, model, fromCache }) {
 
 function renderResult(text, meta) {
   resultCard.hidden = false;
-  resultBody.innerHTML = marked.parse(text);
+  resultBody.innerHTML = renderMd(text);
   lastAnalysisText = text;
   lastAnalysisMeta = meta;
   renderMetaPills(meta);
@@ -520,7 +520,7 @@ historyList.addEventListener("click", async (e) => {
 
   // Load straight into main result card — no modal
   resultCard.hidden = false;
-  resultBody.innerHTML = marked.parse(record.analysisText || "");
+  resultBody.innerHTML = renderMd(record.analysisText || "");
   lastAnalysisText = record.analysisText || "";
   lastAnalysisMeta = {
     provider: record.provider || "",
@@ -610,10 +610,15 @@ function formatTokens(n) {
   return String(n);
 }
 
+// ─── Safe markdown render (fallback if CDN fails) ────────────────────────────
+function renderMd(text) {
+  try { return (typeof marked !== 'undefined' && marked.parse) ? marked.parse(text) : text.replace(/\n/g, '<br>'); } catch { return text.replace(/\n/g, '<br>'); }
+}
+
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 (async function boot() {
   // Configure marked for safe rendering
-  marked.setOptions({ breaks: true, gfm: true });
+  if (typeof marked !== 'undefined') marked.setOptions({ breaks: true, gfm: true });
 
   await initCamera();
   await refreshProviderStatus();
