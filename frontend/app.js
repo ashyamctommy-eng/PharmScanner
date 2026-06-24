@@ -683,6 +683,7 @@ if (progressBtn) {
 // ─── Utils ────────────────────────────────────────────────────────────────────
 function modeLabel(m) {
   return { general:"General", pharmacology:"Pharmacology", pharmaceutics:"Pharmaceutics",
+    chem_org:"🧪 Org. Chem", chem_phys:"⚗️ Phys. Chem", pharmacognosy:"🌿 Pharmacognosy",
     ppb_law:"PPB/Law", microbiology:"Microbiology", clinical:"Clinical", quiz:"🧪 Quiz" }[m] || m;
 }
 function escapeHtml(str) {
