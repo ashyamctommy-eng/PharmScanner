@@ -539,6 +539,7 @@ async function refreshHistoryPanel() {
         </div>
         ${item.tag ? `<span class="history-tag">${escapeHtml(item.tag)}</span>` : ""}
       </div>
+      <button class="history-copy-btn" data-id="${item.id}" title="Copy as text">📋</button>
     </div>
   `).join("");
 }
@@ -552,6 +553,22 @@ historyList.addEventListener("click", async (e) => {
       await historyDelete(id);
       await refreshHistoryPanel();
       toast("Scan deleted.", "success");
+    }
+    return;
+  }
+  // If copy button clicked, copy text to clipboard
+  const copyBtn = e.target.closest(".history-copy-btn");
+  if (copyBtn) {
+    const id = parseInt(copyBtn.dataset.id, 10);
+    const records = await historyGetAll({ limit: 200 });
+    const record = records.find((r) => r.id === id);
+    if (record && record.analysisText) {
+      try {
+        await navigator.clipboard.writeText(record.analysisText);
+        toast("📋 Copied to clipboard", "success");
+      } catch {
+        toast("Failed to copy.", "error");
+      }
     }
     return;
   }
