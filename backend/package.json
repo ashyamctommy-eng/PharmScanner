@@ -1,7 +1,7 @@
 {
   "name": "pharmacy-scanner-api",
   "version": "2.1.0",
-  "description": "KNEC Pharmacy Scanner — Gemini only",
+  "description": "KNEC Pharmacy Scanner — Groq AI (free, no CC)",
   "main": "server.js",
   "type": "module",
   "scripts": {

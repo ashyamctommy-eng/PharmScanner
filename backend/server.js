@@ -10,21 +10,20 @@ import rateLimit from "express-rate-limit";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PORT              = parseInt(process.env.PORT, 10) || 3000;
-const GEMINI_API_KEY    = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY      = process.env.GROQ_API_KEY;
 
-if (!GEMINI_API_KEY) {
-  console.error("FATAL: GEMINI_API_KEY must be set.");
+if (!GROQ_API_KEY) {
+  console.error("FATAL: GROQ_API_KEY must be set.");
   process.exit(1);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AI clients
+// Groq models (free, no credit card needed)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Model routing
-const GEMINI_BASE   = "https://generativelanguage.googleapis.com/v1beta/models";
-const GEMINI_DEEP   = process.env.GEMINI_MODEL_DEEP  || "gemini-1.5-pro";
-const GEMINI_QUICK  = process.env.GEMINI_MODEL_QUICK || "gemini-2.0-flash";
+const GROQ_BASE     = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_DEEP     = process.env.GROQ_MODEL_DEEP  || "llama-3.2-90b-vision-preview";
+const GROQ_QUICK    = process.env.GROQ_MODEL_QUICK || "llama-3.2-11b-vision-preview";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Syllabus modes
@@ -77,41 +76,46 @@ function parseDataUri(dataUri) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gemini streaming — primary provider
+// Groq streaming — OpenAI-compatible API, free vision models
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function streamGemini({ res, images, systemPrompt, modelName, userNote }) {
+async function streamGroq({ res, images, systemPrompt, modelName, userNote }) {
   const text = userNote
     ? `Analyse these pharmacy curriculum documents. Additional context: ${userNote}`
     : "Analyse this pharmacy curriculum document, exam question, or study resource:";
 
-  const parts = [
-    { text },
-    ...images.map((uri) => {
-      const { mimeType, base64 } = parseDataUri(uri);
-      return { inlineData: { mimeType, data: base64 } };
-    }),
+  const content = [
+    { type: "text", text },
+    ...images.map((uri) => ({
+      type: "image_url",
+      image_url: { url: uri },
+    })),
   ];
 
-  // Direct fetch — bypasses SDK, works with any API key
-  const url = `${GEMINI_BASE}/${modelName}:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`;
-
-  const response = await fetch(url, {
+  const response = await fetch(GROQ_BASE, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${GROQ_API_KEY}`,
+    },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: "user", parts }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
+      model: modelName,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content },
+      ],
+      max_tokens: 2048,
+      temperature: 0.2,
+      stream: true,
     }),
   });
 
   if (!response.ok) {
     const errBody = await response.text().catch(() => "");
-    throw new Error(`Gemini API ${response.status}: ${errBody.slice(0, 300)}`);
+    throw new Error(`Groq API ${response.status}: ${errBody.slice(0, 300)}`);
   }
 
-  // Read SSE stream from direct API
+  // Read OpenAI-style SSE stream
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -132,8 +136,7 @@ async function streamGemini({ res, images, systemPrompt, modelName, userNote }) 
 
       try {
         const data = JSON.parse(payload);
-        // Standard Gemini stream: candidates[0].content.parts[0].text
-        const t = data?.candidates?.[0]?.content?.parts?.[0]?.text || data?.text;
+        const t = data?.choices?.[0]?.delta?.content;
         if (t) {
           fullText += t;
           sseWrite(res, { text: t });
@@ -142,56 +145,30 @@ async function streamGemini({ res, images, systemPrompt, modelName, userNote }) 
     }
   }
 
-  // Estimate token usage
-  const estInputTokens  = Math.ceil(parts.reduce((s, p) => {
-    if (p.text) return s + p.text.length / 4;
-    if (p.inlineData) return s + 258;
-    return s;
-  }, 0));
-  const estOutputTokens = Math.ceil(fullText.length / 4);
-
   sseWrite(res, {
-    done: true, provider: "gemini", model: modelName,
-    inputTokens: estInputTokens, outputTokens: estOutputTokens,
+    done: true, provider: "groq", model: modelName,
+    inputTokens: 0, outputTokens: 0,
   });
   res.end();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Core analysis — Gemini only
+// Core analysis — Groq (free, no credit card)
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function streamAnalysis({ res, images, mode, tier, userNote }) {
   const systemPrompt = buildSystemPrompt(mode);
+  const modelName = tier === "quick" ? GROQ_QUICK : GROQ_DEEP;
 
-  // Try models in order — first available wins
-  const models = tier === "quick"
-    ? [GEMINI_QUICK, "gemini-2.0-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"]
-    : [GEMINI_DEEP,  "gemini-1.5-pro", "gemini-2.0-flash", "gemini-1.5-flash-8b"];
-
-  let lastErr = null;
-  for (const modelName of models) {
-    try {
-      sseWrite(res, { status: `Contacting Gemini (${modelName})…` });
-      sseWrite(res, { status: "Analysing…", provider: "gemini", model: modelName });
-      await streamGemini({ res, images, systemPrompt, modelName, userNote });
-      return; // success
-    } catch (err) {
-      lastErr = err;
-      console.warn(`Gemini model ${modelName} failed: ${err.message}`);
-      // 404 = model not found, try next; other errors are fatal
-      if (!err.message.includes("404")) {
-        sseWrite(res, { error: `Gemini error: ${err.message}` });
-        res.end();
-        return;
-      }
-      sseWrite(res, { status: `↻ ${modelName} unavailable, trying next…` });
-    }
+  try {
+    sseWrite(res, { status: `Contacting Groq (${modelName})…` });
+    sseWrite(res, { status: "Analysing…", provider: "groq", model: modelName });
+    await streamGroq({ res, images, systemPrompt, modelName, userNote });
+  } catch (err) {
+    console.error("Groq error:", err.message);
+    sseWrite(res, { error: `Groq error: ${err.message}` });
+    res.end();
   }
-
-  console.error("All Gemini models failed:", lastErr?.message);
-  sseWrite(res, { error: `Gemini error: ${lastErr?.message}` });
-  res.end();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -246,10 +223,10 @@ app.post("/api/analyze", async (req, res) => {
 
 app.get("/api/models", (_req, res) => {
   res.json({
-    gemini: true,
+    groq: true,
     models: {
-      deep:  GEMINI_DEEP,
-      quick: GEMINI_QUICK,
+      deep:  GROQ_DEEP,
+      quick: GROQ_QUICK,
     },
   });
 });
@@ -265,5 +242,5 @@ app.get("/health", (_req, res) => res.json({ status: "ok", ts: Date.now() }));
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`PharmaScan API v2.1 listening on :${PORT} — Gemini (free)`);
+  console.log(`PharmaScan API v2.1 listening on :${PORT} — Groq (free, no CC)`);
 });

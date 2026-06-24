@@ -608,6 +608,7 @@ body {
 
 .meta-pill.openai { background: #e0f2fe; color: #075985; }
 .meta-pill.gemini { background: #e8f5e9; color: #1b5e20; }
+.meta-pill.groq { background: #f3e5f5; color: #4a148c; }
 .meta-pill.claude { background: #fce7f3; color: #9d174d; }
 .meta-pill.cached { background: var(--accent-light); color: var(--accent-dark); }
 
