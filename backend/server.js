@@ -29,7 +29,7 @@ const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY 
 
 // Model routing
 const GEMINI_DEEP   = process.env.GEMINI_MODEL_DEEP  || "gemini-1.5-pro";
-const GEMINI_QUICK  = process.env.GEMINI_MODEL_QUICK || "gemini-1.5-flash";
+const GEMINI_QUICK  = process.env.GEMINI_MODEL_QUICK || "gemini-1.5-flash-8b";
 const CLAUDE_MODEL  = process.env.CLAUDE_MODEL       || "claude-3-haiku-20240307";
 
 // ─────────────────────────────────────────────────────────────────────────────
