@@ -24,7 +24,7 @@ if (!GEMINI_API_KEY) {
 // Model routing
 const GEMINI_BASE   = "https://generativelanguage.googleapis.com/v1beta/models";
 const GEMINI_DEEP   = process.env.GEMINI_MODEL_DEEP  || "gemini-1.5-pro";
-const GEMINI_QUICK  = process.env.GEMINI_MODEL_QUICK || "gemini-1.5-flash-8b";
+const GEMINI_QUICK  = process.env.GEMINI_MODEL_QUICK || "gemini-2.0-flash";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Syllabus modes
@@ -166,8 +166,8 @@ async function streamAnalysis({ res, images, mode, tier, userNote }) {
 
   // Try models in order — first available wins
   const models = tier === "quick"
-    ? [GEMINI_QUICK, "gemini-1.5-flash-8b", "gemini-1.5-pro", "gemini-1.0-pro"]
-    : [GEMINI_DEEP,  "gemini-1.5-pro", "gemini-1.5-flash-8b"];
+    ? [GEMINI_QUICK, "gemini-2.0-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"]
+    : [GEMINI_DEEP,  "gemini-1.5-pro", "gemini-2.0-flash", "gemini-1.5-flash-8b"];
 
   let lastErr = null;
   for (const modelName of models) {
