@@ -630,7 +630,16 @@ body {
 .result-body h2 { font-size: 1.05rem; }
 .result-body h3 { font-size: 0.97rem; }
 .result-body p  { margin-bottom: 0.7em; }
-.result-body strong { color: var(--primary-dark); }
+.result-body strong {
+  color: var(--primary-dark);
+  background: linear-gradient(to right, transparent, rgba(6,70,99,0.06), transparent);
+  padding: 0 0.15em;
+  font-weight: 700;
+}
+.result-body em {
+  color: var(--accent-dark);
+  font-style: italic;
+}
 .result-body ul,.result-body ol { padding-left: 1.4rem; margin-bottom: 0.7em; }
 .result-body li { margin-bottom: 0.25em; }
 .result-body code {

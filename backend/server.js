@@ -54,22 +54,24 @@ A concise statement of the drug class, physiological system, or legal framework 
 
 ### 📝 Systematic Breakdown
 Step-by-step logic. For calculations:
-- Show the **formula** in a code block with proper units.
+- Start with \`#### Problem\` or \`#### Given / Required\`.
+- Show the **formula** in a code block.
 - Show each **substitution** clearly.
-- **Bold** the final answer.
+- End with \`**✅ Final answer: [value] [unit]**\` on its own line — this gets highlighted nicely.
 - Use > blockquotes for key reminders.
 
 ### 💡 Clinical / Practical Note
 Real-world context relevant to a pharmacy technologist in Kenya. Use > blockquotes for memorable takeaways.
 
-### Visual emphasis
-- Use **bold** for key numbers, drug names, and final answers.
+### Visual emphasis — CRITICAL for readability
+- Use \`**\`####\` headings\`** (4 hashes) for EACH question or sub-topic heading — these will render in blue.
+- Use \`**\`**bold**\`**\` for all final answers, key numbers, drug names, and important values — these will render in dark blue with a subtle highlight.
+- Use `*italic*` for clinical context and secondary notes — renders in amber.
 - Use \`code\` for units (mg/mL, mmHg, etc.) and formulas.
 - Use > blockquotes for important warnings or clinical pearls.
 - Use --- horizontal rules between unrelated sections.
 - Use numbered lists for sequential steps.
 - Use bullet lists for groups of items.
-- For flashcards/info summaries, use | **Term** | **Meaning** | style tables if helpful.
 
 ### 🃏 Quick-Review Card
 At the VERY END of your analysis, add a summary card:
