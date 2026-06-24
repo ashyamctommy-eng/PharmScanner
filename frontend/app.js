@@ -64,7 +64,6 @@ const detailCloseBtn   = $("detailCloseBtn");
 const detailCopyBtn    = $("detailCopyBtn");
 const detailDeleteBtn  = $("detailDeleteBtn");
 const pillGemini      = $("pillGemini");
-const pillClaude       = $("pillClaude");
 const offlinePill      = $("offlinePill");
 const toastEl          = $("toast");
 
@@ -96,7 +95,6 @@ async function refreshProviderStatus() {
     if (!res.ok) return;
     const data = await res.json();
     pillGemini.dataset.active = String(data.gemini);
-    pillClaude.dataset.active  = String(data.claude);
     // Update tier sub-labels with actual model names
     document.querySelectorAll(".tier-btn[data-tier='quick'] .tier-sub")
       .forEach((el) => { el.textContent = `${data.models.quick} · cheap`; });
@@ -389,9 +387,7 @@ function renderMetaPills({ provider, model, fromCache }) {
   if (fromCache) {
     pills.push(`<span class="meta-pill cached">⚡ Local cache</span>`);
   } else {
-    const cls = provider === "claude" ? "claude" : "gemini";
-    const label = provider === "claude" ? "Claude" : "Gemini";
-    pills.push(`<span class="meta-pill ${cls}">${label}</span>`);
+    pills.push(`<span class="meta-pill gemini">Gemini</span>`);
     if (model) pills.push(`<span class="meta-pill">${model}</span>`);
   }
   resultMeta.innerHTML = pills.join("");

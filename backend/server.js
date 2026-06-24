@@ -4,7 +4,6 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
-import Anthropic from "@anthropic-ai/sdk";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Environment & validation
@@ -12,10 +11,9 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const PORT              = parseInt(process.env.PORT, 10) || 3000;
 const GEMINI_API_KEY    = process.env.GEMINI_API_KEY;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-if (!GEMINI_API_KEY && !ANTHROPIC_API_KEY) {
-  console.error("FATAL: At least one of GEMINI_API_KEY or ANTHROPIC_API_KEY must be set.");
+if (!GEMINI_API_KEY) {
+  console.error("FATAL: GEMINI_API_KEY must be set.");
   process.exit(1);
 }
 
@@ -23,13 +21,9 @@ if (!GEMINI_API_KEY && !ANTHROPIC_API_KEY) {
 // AI clients
 // ─────────────────────────────────────────────────────────────────────────────
 
-const gemini    = null; // removed SDK — using direct fetch instead
-const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY })               : null;
-
 // Model routing
 const GEMINI_DEEP   = process.env.GEMINI_MODEL_DEEP  || "gemini-1.5-pro";
 const GEMINI_QUICK  = process.env.GEMINI_MODEL_QUICK || "gemini-1.5-flash-8b";
-const CLAUDE_MODEL  = process.env.CLAUDE_MODEL       || "claude-3-haiku-20240307";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Syllabus modes
@@ -163,105 +157,22 @@ async function streamGemini({ res, images, systemPrompt, modelName, userNote }) 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Claude streaming — fallback
-// ─────────────────────────────────────────────────────────────────────────────
-
-function buildClaudeContent(images, userNote) {
-  const text = userNote
-    ? `Analyse these pharmacy curriculum documents. Additional context: ${userNote}`
-    : "Analyse this pharmacy curriculum document, exam question, or study resource:";
-
-  const content = [
-    ...images.map((uri) => {
-      const { mimeType, base64 } = parseDataUri(uri);
-      return { type: "image", source: { type: "base64", media_type: mimeType, data: base64 } };
-    }),
-    { type: "text", text },
-  ];
-  return [{ role: "user", content }];
-}
-
-async function streamClaude({ res, images, systemPrompt, modelName, userNote }) {
-  const stream = await anthropic.messages.create({
-    model: modelName,
-    max_tokens: 2048,
-    temperature: 0.2,
-    system: systemPrompt,
-    messages: buildClaudeContent(images, userNote),
-    stream: true,
-  });
-
-  let inputTokens = 0, outputTokens = 0;
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
-      sseWrite(res, { text: event.delta.text });
-    }
-    if (event.type === "message_delta" && event.usage) {
-      outputTokens = event.usage.output_tokens || 0;
-    }
-    if (event.type === "message_start" && event.message?.usage) {
-      inputTokens = event.message.usage.input_tokens || 0;
-    }
-  }
-
-  sseWrite(res, {
-    done: true,
-    provider: "claude",
-    model: modelName,
-    inputTokens,
-    outputTokens,
-  });
-  res.end();
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Core analysis — Gemini primary → Claude fallback
+// Core analysis — Gemini only
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function streamAnalysis({ res, images, mode, tier, userNote }) {
   const systemPrompt = buildSystemPrompt(mode);
   const geminiModel  = tier === "quick" ? GEMINI_QUICK : GEMINI_DEEP;
 
-  // ── Attempt 1: Gemini (primary) ────────────────────────────────────────
-  if (gemini) {
-    try {
-      sseWrite(res, { status: `Contacting Gemini (${geminiModel})…` });
-      sseWrite(res, { status: "Analysing…", provider: "gemini", model: geminiModel });
-      await streamGemini({ res, images, systemPrompt, modelName: geminiModel, userNote });
-      return;
-    } catch (err) {
-      console.error(`Gemini error: ${err.message}`);
-      // Only fall through to Claude on transient/server errors
-      const transient = [429, 500, 503].includes(err.status) ||
-                        err.message?.includes("SAFETY") ||
-                        err.message?.includes("quota") ||
-                        err.message?.includes("RESOURCE_EXHAUSTED");
-      if (!transient) {
-        sseWrite(res, { error: `Gemini error: ${err.message}` });
-        res.end();
-        return;
-      }
-      console.warn("Gemini transient error — falling back to Claude…");
-      sseWrite(res, { status: "Gemini busy — switching to Claude backup…" });
-    }
+  try {
+    sseWrite(res, { status: `Contacting Gemini (${geminiModel})…` });
+    sseWrite(res, { status: "Analysing…", provider: "gemini", model: geminiModel });
+    await streamGemini({ res, images, systemPrompt, modelName: geminiModel, userNote });
+  } catch (err) {
+    console.error("Gemini error:", err.message);
+    sseWrite(res, { error: `Gemini error: ${err.message}` });
+    res.end();
   }
-
-  // ── Attempt 2: Claude Haiku fallback ──────────────────────────────────
-  if (anthropic) {
-    try {
-      sseWrite(res, { status: "Contacting Claude…", provider: "claude" });
-      await streamClaude({ res, images, systemPrompt, modelName: CLAUDE_MODEL, userNote });
-      return;
-    } catch (err) {
-      console.error("Claude fallback error:", err.message);
-      sseWrite(res, { error: `All providers failed. Last error: ${err.message}` });
-      res.end();
-      return;
-    }
-  }
-
-  sseWrite(res, { error: "No AI providers are configured. Check your API keys." });
-  res.end();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -316,12 +227,10 @@ app.post("/api/analyze", async (req, res) => {
 
 app.get("/api/models", (_req, res) => {
   res.json({
-    gemini: !!gemini,
-    claude: !!anthropic,
+    gemini: true,
     models: {
-      deep:   GEMINI_DEEP,
-      quick:  GEMINI_QUICK,
-      claude: CLAUDE_MODEL,
+      deep:  GEMINI_DEEP,
+      quick: GEMINI_QUICK,
     },
   });
 });
@@ -337,6 +246,5 @@ app.get("/health", (_req, res) => res.json({ status: "ok", ts: Date.now() }));
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, "0.0.0.0", () => {
-  const providers = [gemini && "Gemini", anthropic && "Claude"].filter(Boolean).join(" + ");
-  console.log(`PharmaScan API v2.1 listening on :${PORT}  providers: ${providers}`);
+  console.log(`PharmaScan API v2.1 listening on :${PORT} — Gemini (free)`);
 });
