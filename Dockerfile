@@ -3,8 +3,8 @@ FROM node:20-alpine AS deps
 
 WORKDIR /app
 
-COPY backend/package.json backend/package-lock.json* ./
-RUN npm ci --omit=dev && npm cache clean --force
+COPY backend/package.json ./
+RUN npm install --omit=dev && npm cache clean --force
 
 # ─── Stage 2: Runtime image ───────────────────────────────────────────
 FROM node:20-alpine
