@@ -788,4 +788,25 @@ function renderMd(text) {
 
   // Retry queued items if online
   if (navigator.onLine) await drainOfflineQueue();
+
+  // Show first-time welcome hint
+  if (!localStorage.getItem("pharmascan_welcomed")) {
+    const hint = document.createElement("div");
+    hint.className = "welcome-hint";
+    hint.id = "welcomeHint";
+    hint.innerHTML = '📸 Tap <strong>Capture</strong> to snap a document<br>or choose an image below';
+    const dismiss = document.createElement("span");
+    dismiss.className = "hint-dismiss";
+    dismiss.textContent = "Got it ✕";
+    dismiss.onclick = () => { hint.remove(); localStorage.setItem("pharmascan_welcomed", "1"); };
+    hint.appendChild(dismiss);
+    cameraWrapper.appendChild(hint);
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => {
+      if (document.getElementById("welcomeHint")) {
+        document.getElementById("welcomeHint").remove();
+        localStorage.setItem("pharmascan_welcomed", "1");
+      }
+    }, 8000);
+  }
 })();
