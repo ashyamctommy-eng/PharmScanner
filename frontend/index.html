@@ -322,7 +322,7 @@
       </h3>
       <div class="panel-header-actions">
         <button class="btn-link danger" id="clearHistoryBtn">Clear all</button>
-        <button class="icon-btn" id="historyCloseBtn">
+        <button class="icon-btn" id="historyCloseBtn" onclick="document.getElementById('historyPanel').classList.remove('open');document.getElementById('historyPanel').setAttribute('aria-hidden','true');document.getElementById('panelOverlay').setAttribute('hidden','')">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
@@ -340,10 +340,10 @@
       </p>
     </div>
   </aside>
-  <div class="panel-overlay" id="panelOverlay" hidden></div>
+  <div class="panel-overlay" id="panelOverlay" onclick="document.getElementById('historyPanel').classList.remove('open');document.getElementById('historyPanel').setAttribute('aria-hidden','true');this.setAttribute('hidden','')" hidden></div>
 
   <!-- ═══ USAGE DASHBOARD ═════════════════════════════════════════════ -->
-  <div class="modal-overlay" id="dashboardOverlay" hidden>
+  <div class="modal-overlay" id="dashboardOverlay" hidden onclick="if(event.target===this||event.target.closest('#dashboardCloseBtn')){this.setAttribute('hidden','')}">
     <div class="modal" id="dashboardModal">
       <div class="modal-header">
         <h3>
@@ -355,7 +355,7 @@
           </svg>
           Usage Dashboard
         </h3>
-        <button class="icon-btn" id="dashboardCloseBtn">
+        <button class="icon-btn" id="dashboardCloseBtn" onclick="this.closest('.modal-overlay').setAttribute('hidden','')">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>

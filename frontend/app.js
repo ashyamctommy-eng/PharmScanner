@@ -543,35 +543,7 @@ historyList.addEventListener("click", async (e) => {
   toast("Loaded from history.");
 });
 
-// ─── GLOBAL CLOSE HANDLER ──────────────────────────────────────────────────
-// Closes dashboard modal and history panel when tapping outside.
-document.addEventListener("pointerdown", (e) => {
-  // Dashboard overlay
-  if (!dashboardOverlay.hidden) {
-    const closeBtn = e.target.closest("#dashboardCloseBtn");
-    if (closeBtn || e.target === dashboardOverlay) {
-      dashboardOverlay.hidden = true;
-      return;
-    }
-  // Dashboard overlay
-  if (!dashboardOverlay.hidden) {
-    const closeBtn = e.target.closest("#dashboardCloseBtn");
-    if (closeBtn || e.target === dashboardOverlay) {
-      dashboardOverlay.hidden = true;
-      return;
-    }
-  }
-  // History panel
-  if (historyPanel.classList.contains("open")) {
-    const closeBtn = e.target.closest("#historyCloseBtn");
-    if (closeBtn || e.target === panelOverlay) {
-      historyPanel.classList.remove("open");
-      historyPanel.setAttribute("aria-hidden", "true");
-      panelOverlay.hidden = true;
-      return;
-    }
-  }
-}, { capture: true, passive: true });
+// ─── (Modal close now handled by inline HTML onclick attributes) ────────────
 
 // ─── History toggle ────────────────────────────────────────────────────────
 historyToggleBtn.addEventListener("click", () => {
