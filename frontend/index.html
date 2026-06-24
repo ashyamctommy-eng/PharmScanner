@@ -15,23 +15,56 @@
   <header class="app-header">
     <div class="header-inner">
       <div class="header-brand">
-        <span class="logo">💊 PharmaScan<span class="logo-ke">KE</span></span>
+        <span class="logo">
+          <svg class="icon-pill" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="4" width="16" height="16" rx="8" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+          </svg>
+          PharmaScan<span class="logo-ke">KE</span>
+        </span>
         <span class="tagline">KNEC · Pharmaceutical Technology</span>
       </div>
       <div class="header-actions">
         <button class="icon-btn" id="historyToggleBtn" title="History" aria-label="Toggle history panel">
-          🕘
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
           <span class="badge" id="historyBadge" hidden>0</span>
         </button>
-        <button class="icon-btn" id="dashboardBtn" title="Usage dashboard" aria-label="Usage dashboard">📊</button>
+        <button class="icon-btn" id="dashboardBtn" title="Usage dashboard" aria-label="Usage dashboard">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+            <line x1="2" y1="20" x2="22" y2="20"/>
+          </svg>
+        </button>
       </div>
     </div>
 
     <!-- Provider status bar -->
     <div class="provider-bar" id="providerBar">
-      <span class="provider-pill" id="pillGemini" data-active="false">⬤ Gemini (free)</span>
-      <span class="provider-pill" id="pillClaude" data-active="false">⬤ Claude</span>
-      <span class="offline-pill" id="offlinePill" hidden>📵 Offline — scans queued</span>
+      <span class="provider-pill" id="pillGemini" data-active="false">
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+        Gemini (free)
+      </span>
+      <span class="provider-pill" id="pillClaude" data-active="false">
+        <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+        Claude
+      </span>
+      <span class="offline-pill" id="offlinePill" hidden>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="1" y1="1" x2="23" y2="23"/>
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+          <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+          <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+          <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+          <line x1="12" y1="20" x2="12.01" y2="20"/>
+        </svg>
+        Offline — scans queued
+      </span>
     </div>
   </header>
 
@@ -41,7 +74,13 @@
     <!-- ── SCAN CARD ─────────────────────────────────────────────────── -->
     <section class="card scan-card">
       <div class="card-header">
-        <h2>📷 Scan Document</h2>
+        <h2>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Scan Document
+        </h2>
         <p class="card-sub">Align your document inside the scan box. Supports up to 10 pages.</p>
       </div>
 
@@ -51,7 +90,12 @@
 
         <!-- Blur warning overlay -->
         <div class="blur-warning" id="blurWarning" hidden>
-          <span>⚠️ Image blurry — hold camera steadier</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Image blurry — hold camera steadier
         </div>
 
         <!-- Scan-box overlay -->
@@ -65,38 +109,67 @@
           </div>
         </div>
 
-        <!-- Capture button (shown when camera is active) -->
+        <!-- Capture button -->
         <div class="camera-controls">
-          <button id="captureBtn" class="btn btn-capture">📸 Capture</button>
+          <button id="captureBtn" class="btn btn-capture">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            Capture
+          </button>
         </div>
 
-        <!-- Upload fallback (shown when camera denied) -->
+        <!-- Upload fallback -->
         <div class="upload-fallback" id="uploadFallback" hidden>
-          <label for="fileInput" class="btn btn-secondary">📁 Choose Image</label>
+          <label for="fileInput" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Choose Image
+          </label>
           <input type="file" id="fileInput" accept="image/*" multiple hidden />
         </div>
       </div>
 
-      <!-- Multi-image captured strip -->
+      <!-- Multi-image strip -->
       <div class="image-strip-wrapper" id="imageStripWrapper" hidden>
         <div class="image-strip-header">
           <span class="strip-label" id="stripLabel">0 pages captured</span>
-          <button class="btn-link" id="clearStripBtn">✕ Clear all</button>
+          <button class="btn-link" id="clearStripBtn">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Clear all
+          </button>
         </div>
-        <div class="image-strip" id="imageStrip">
-          <!-- Thumbnails injected here -->
-        </div>
-        <button id="addMoreBtn" class="btn btn-outline btn-sm">+ Add More Pages</button>
+        <div class="image-strip" id="imageStrip"></div>
+        <button id="addMoreBtn" class="btn btn-outline btn-sm">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add More Pages
+        </button>
       </div>
     </section>
 
-    <!-- ── SETTINGS CARD (mode + tier) ──────────────────────────────── -->
+    <!-- ── SETTINGS CARD ────────────────────────────────────────────── -->
     <section class="card settings-card">
       <div class="settings-row">
 
         <!-- Syllabus mode -->
         <div class="setting-group">
-          <label class="setting-label">📚 Syllabus Mode</label>
+          <label class="setting-label">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+            Syllabus Mode
+          </label>
           <div class="mode-pills" id="modePills">
             <button class="mode-pill active" data-mode="general">General</button>
             <button class="mode-pill" data-mode="pharmacology">Pharmacology</button>
@@ -109,15 +182,31 @@
 
         <!-- Tier toggle -->
         <div class="setting-group">
-          <label class="setting-label">⚡ Analysis Depth</label>
+          <label class="setting-label">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/>
+            </svg>
+            Analysis Depth
+          </label>
           <div class="tier-toggle" id="tierToggle">
             <button class="tier-btn" data-tier="quick">
-              <span class="tier-icon">⚡</span>
+              <span class="tier-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/>
+                </svg>
+              </span>
               <span class="tier-name">Quick</span>
               <span class="tier-sub">gemini-1.5-flash · cheap</span>
             </button>
             <button class="tier-btn active" data-tier="deep">
-              <span class="tier-icon">🔬</span>
+              <span class="tier-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="7"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                  <line x1="11" y1="8" x2="11" y2="14"/>
+                  <line x1="8" y1="11" x2="14" y2="11"/>
+                </svg>
+              </span>
               <span class="tier-name">Deep</span>
               <span class="tier-sub">gemini-1.5-pro · thorough</span>
             </button>
@@ -139,85 +228,192 @@
       <!-- Analyze button -->
       <div class="analyze-row">
         <button id="analyzeBtn" class="btn btn-primary btn-analyze" disabled>
-          🔍 Analyse <span id="analyzeBtnCount"></span>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Analyse <span id="analyzeBtnCount"></span>
         </button>
       </div>
     </section>
 
-    <!-- ── STATUS BAR ────────────────────────────────────────────────── -->
+    <!-- ── STATUS BAR ──────────────────────────────────────────────── -->
     <div class="status-bar" id="statusBar" hidden>
       <span class="status-spinner"></span>
       <span id="statusText">Analysing…</span>
-      <button class="btn-cancel" id="cancelBtn" title="Cancel">✕</button>
+      <button class="btn-cancel" id="cancelBtn" title="Cancel">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
 
-    <!-- ── RESULT CARD ───────────────────────────────────────────────── -->
+    <!-- ── RESULT CARD ─────────────────────────────────────────────── -->
     <section class="card result-card" id="resultCard" hidden>
       <div class="card-header result-header">
-        <h2>📋 Analysis</h2>
-        <div class="result-meta" id="resultMeta"><!-- provider badge injected --></div>
+        <h2>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          Analysis
+        </h2>
+        <div class="result-meta" id="resultMeta"></div>
       </div>
       <div class="result-body" id="resultBody"></div>
       <div class="result-actions">
-        <button id="copyBtn"  class="btn btn-outline">📄 Copy</button>
-        <button id="saveBtn"  class="btn btn-outline">💾 Save to History</button>
-        <button id="clearBtn" class="btn btn-outline">✕ Clear</button>
+        <button id="copyBtn" class="btn btn-outline">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          Copy
+        </button>
+        <button id="saveBtn" class="btn btn-outline">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Save
+        </button>
+        <button id="clearBtn" class="btn btn-outline">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+          Clear
+        </button>
       </div>
     </section>
 
   </main>
 
-  <!-- ═══ HISTORY PANEL (slide-in) ════════════════════════════════════════ -->
+  <!-- ═══ CREDITS MARQUEE ═══════════════════════════════════════════════ -->
+  <section class="credits-section">
+    <div class="credits-marquee">
+      <a href="https://t.me/Poriot_ke" target="_blank" rel="noopener" class="credits-link">
+        <span class="marquee-track">
+          <span class="marquee-text">made with ♥️ by <strong>@Poriot_ke</strong></span>
+          <span class="marquee-sep">✦</span>
+          <span class="marquee-text">made with ♥️ by <strong>@Poriot_ke</strong></span>
+          <span class="marquee-sep">✦</span>
+          <span class="marquee-text">made with ♥️ by <strong>@Poriot_ke</strong></span>
+          <span class="marquee-sep">✦</span>
+          <span class="marquee-text">made with ♥️ by <strong>@Poriot_ke</strong></span>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ═══ HISTORY PANEL ════════════════════════════════════════════════ -->
   <aside class="history-panel" id="historyPanel" aria-hidden="true">
     <div class="panel-header">
-      <h3>🕘 Scan History</h3>
+      <h3>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Scan History
+      </h3>
       <div class="panel-header-actions">
         <button class="btn-link danger" id="clearHistoryBtn">Clear all</button>
-        <button class="icon-btn" id="historyCloseBtn">✕</button>
+        <button class="icon-btn" id="historyCloseBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
     </div>
     <div class="history-list" id="historyList">
-      <p class="empty-state">No scans yet.</p>
+      <p class="empty-state">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        No scans yet.
+      </p>
     </div>
   </aside>
   <div class="panel-overlay" id="panelOverlay" hidden></div>
 
-  <!-- ═══ USAGE DASHBOARD MODAL ════════════════════════════════════════════ -->
+  <!-- ═══ USAGE DASHBOARD ═════════════════════════════════════════════ -->
   <div class="modal-overlay" id="dashboardOverlay" hidden>
     <div class="modal" id="dashboardModal">
       <div class="modal-header">
-        <h3>📊 Usage Dashboard</h3>
-        <button class="icon-btn" id="dashboardCloseBtn">✕</button>
+        <h3>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+            <line x1="2" y1="20" x2="22" y2="20"/>
+          </svg>
+          Usage Dashboard
+        </h3>
+        <button class="icon-btn" id="dashboardCloseBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
-      <div class="modal-body" id="dashboardBody">
-        <!-- injected by app.js -->
-      </div>
+      <div class="modal-body" id="dashboardBody"></div>
     </div>
   </div>
 
-  <!-- ═══ HISTORY DETAIL MODAL ════════════════════════════════════════════ -->
+  <!-- ═══ HISTORY DETAIL MODAL ════════════════════════════════════════ -->
   <div class="modal-overlay" id="detailOverlay" hidden>
     <div class="modal modal-wide" id="detailModal">
       <div class="modal-header">
-        <h3>📋 Saved Analysis</h3>
-        <button class="icon-btn" id="detailCloseBtn">✕</button>
+        <h3>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Saved Analysis
+        </h3>
+        <button class="icon-btn" id="detailCloseBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <div class="modal-body">
         <div class="detail-thumb-row" id="detailThumbRow"></div>
         <div class="detail-meta" id="detailMeta"></div>
         <div class="result-body" id="detailBody"></div>
         <div class="modal-actions">
-          <button class="btn btn-outline" id="detailCopyBtn">📄 Copy</button>
-          <button class="btn btn-outline danger" id="detailDeleteBtn">🗑 Delete</button>
+          <button class="btn btn-outline" id="detailCopyBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy
+          </button>
+          <button class="btn btn-outline danger" id="detailDeleteBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Delete
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ═══ TOAST ═══════════════════════════════════════════════════════════ -->
+  <!-- ═══ TOAST ═══════════════════════════════════════════════════════ -->
   <div class="toast" id="toast" hidden></div>
 
-  <!-- ═══ FOOTER ══════════════════════════════════════════════════════════ -->
+  <!-- ═══ FOOTER ══════════════════════════════════════════════════════ -->
   <footer class="app-footer">
     <p>For educational use only. Verify all answers with your lecturers and official KNEC materials.</p>
   </footer>
