@@ -20,12 +20,9 @@ let mediaStream = null;
  */
 export async function startCamera(videoEl) {
   try {
+    // Use simpler constraints for wider device compatibility
     mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: "environment" },
-        width:  { ideal: 1920 },
-        height: { ideal: 1080 },
-      },
+      video: { facingMode: "environment", width: 1280, height: 720 },
       audio: false,
     });
     videoEl.srcObject = mediaStream;
@@ -74,35 +71,43 @@ export async function captureFrame(videoEl) {
 // ─── Compression ─────────────────────────────────────────────────────────────
 
 /**
- * Downscale and JPEG-compress a Blob.
+ * Downscale and JPEG-compress a file or blob.
+ * Uses FileReader + data URL instead of URL.createObjectURL for better mobile compatibility.
  * Downscales to COMPRESS_MAX_DIM on the longest side, preserving aspect ratio.
  * @returns {Blob} compressed JPEG
  */
 export function compressImage(fileOrBlob) {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(fileOrBlob);
+    const reader = new FileReader();
 
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let { naturalWidth: w, naturalHeight: h } = img;
-      if (w > COMPRESS_MAX_DIM || h > COMPRESS_MAX_DIM) {
-        const ratio = Math.min(COMPRESS_MAX_DIM / w, COMPRESS_MAX_DIM / h);
-        w = Math.round(w * ratio);
-        h = Math.round(h * ratio);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width  = w;
-      canvas.height = h;
-      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-      canvas.toBlob(
-        (b) => b ? resolve(b) : reject(new Error("Compression failed")),
-        "image/jpeg", COMPRESS_QUALITY
-      );
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const img = new Image();
+
+      img.onload = () => {
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (w > COMPRESS_MAX_DIM || h > COMPRESS_MAX_DIM) {
+          const ratio = Math.min(COMPRESS_MAX_DIM / w, COMPRESS_MAX_DIM / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        canvas.toBlob(
+          (b) => b ? resolve(b) : reject(new Error("Compression failed")),
+          "image/jpeg", COMPRESS_QUALITY
+        );
+      };
+
+      img.onerror = () => reject(new Error("Image load failed. Try a different photo or format."));
+      img.src = dataUrl;
     };
 
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
-    img.src = url;
+    reader.onerror = () => reject(new Error("Could not read file."));
+    reader.readAsDataURL(fileOrBlob);
   });
 }
 
@@ -164,18 +169,21 @@ export function isBlurry(varianceScore) {
  */
 export function makeThumbnail(blob) {
   return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(blob);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const W = 120, H = 90;
-      const canvas = document.createElement("canvas");
-      canvas.width = W; canvas.height = H;
-      canvas.getContext("2d").drawImage(img, 0, 0, W, H);
-      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const W = 120, H = 90;
+        const canvas = document.createElement("canvas");
+        canvas.width = W; canvas.height = H;
+        canvas.getContext("2d").drawImage(img, 0, 0, W, H);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.onerror = () => resolve("");
+      img.src = e.target.result;
     };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(""); };
-    img.src = url;
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(blob);
   });
 }
 
