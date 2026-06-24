@@ -645,7 +645,7 @@ if (progressBtn) {
         return `${label}: ${bar} ${v} scans`;
       }).join("\n");
 
-    toast(`📊 Your progress (${total} total):\n${lines}`, null, 6000);
+    toast(`📊 ${total} scans total`, "success");
   });
 }
 
