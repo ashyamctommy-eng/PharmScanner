@@ -9,11 +9,15 @@ import rateLimit from "express-rate-limit";
 // Environment & validation
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PORT              = parseInt(process.env.PORT, 10) || 3000;
-const GROQ_API_KEY      = process.env.GROQ_API_KEY;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
 
-if (!GROQ_API_KEY) {
-  console.error("FATAL: GROQ_API_KEY must be set.");
+// ─── Provider API keys ─────────────────────────────────────────────────
+const GROQ_API_KEY      = process.env.GROQ_API_KEY      || "";
+const OPENAI_API_KEY    = process.env.OPENAI_API_KEY    || "";
+const OPENMODEL_API_KEY = process.env.OPENMODEL_API_KEY || "";
+
+if (!GROQ_API_KEY && !OPENAI_API_KEY && !OPENMODEL_API_KEY) {
+  console.error("FATAL: At least one API key required (GROQ_API_KEY, OPENAI_API_KEY, or OPENMODEL_API_KEY).");
   process.exit(1);
 }
 
@@ -26,12 +30,47 @@ if (TELEGRAM_ENABLED) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Groq models (free, no credit card needed)
+// Provider registry
+// Each provider is an OpenAI-compatible chat completions API.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const GROQ_BASE     = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_DEEP     = process.env.GROQ_MODEL_DEEP  || "meta-llama/llama-4-scout-17b-16e-instruct";
-const GROQ_QUICK    = process.env.GROQ_MODEL_QUICK || "meta-llama/llama-4-scout-17b-16e-instruct";
+const PROVIDERS = {
+  openai: {
+    name: "OpenAI",
+    key: () => OPENAI_API_KEY,
+    base: "https://api.openai.com/v1/chat/completions",
+    models: {
+      quick: process.env.OPENAI_MODEL_QUICK || "gpt-4o-mini",
+      deep:  process.env.OPENAI_MODEL_DEEP  || "gpt-4o",
+    },
+    available: () => !!OPENAI_API_KEY,
+  },
+  deepseek: {
+    name: "DeepSeek",
+    key: () => OPENMODEL_API_KEY,
+    // Uses Anthropic Messages protocol (NOT OpenAI chat completions)
+    base: "https://api.openmodel.ai/v1/messages",
+    models: {
+      quick: "deepseek-v4-flash",
+      deep:  "deepseek-v4-flash",
+    },
+    available: () => !!OPENMODEL_API_KEY,
+    free: true,
+    protocol: "anthropic",  // signals Anthropic Messages format
+  },
+  groq: {
+    name: "Groq",
+    key: () => GROQ_API_KEY,
+    base: "https://api.groq.com/openai/v1/chat/completions",
+    models: {
+      quick: process.env.GROQ_MODEL_QUICK || "meta-llama/llama-4-scout-17b-16e-instruct",
+      deep:  process.env.GROQ_MODEL_DEEP  || "meta-llama/llama-4-scout-17b-16e-instruct",
+    },
+    available: () => !!GROQ_API_KEY,
+  },
+};
+
+const PROVIDER_ORDER = ["deepseek", "groq"];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Syllabus modes — CDACC D.Pharm · RVTTI Eldoret
@@ -247,10 +286,11 @@ async function forwardToTelegram(base64Image, caption) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Groq streaming — OpenAI-compatible API, free vision models
+// Generic OpenAI-compatible streaming function
+// Works with: OpenAI, Groq, OpenModel, and any OpenAI-compatible API
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function streamGroq({ res, images, systemPrompt, modelName, userNote }) {
+async function streamOpenAICompatible({ res, images, systemPrompt, providerKey, baseUrl, modelName, userNote }) {
   const text = userNote
     ? `Analyse these pharmacy curriculum documents. Additional context: ${userNote}`
     : "Analyse this pharmacy curriculum document, exam question, or study resource:";
@@ -263,11 +303,11 @@ async function streamGroq({ res, images, systemPrompt, modelName, userNote }) {
     })),
   ];
 
-  const response = await fetch(GROQ_BASE, {
+  const response = await fetch(baseUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${GROQ_API_KEY}`,
+      Authorization: `Bearer ${providerKey}`,
     },
     body: JSON.stringify({
       model: modelName,
@@ -275,7 +315,7 @@ async function streamGroq({ res, images, systemPrompt, modelName, userNote }) {
         { role: "system", content: systemPrompt },
         { role: "user", content },
       ],
-      max_tokens: 2048,
+      max_tokens: 4096,
       temperature: 0.2,
       stream: true,
     }),
@@ -283,7 +323,8 @@ async function streamGroq({ res, images, systemPrompt, modelName, userNote }) {
 
   if (!response.ok) {
     const errBody = await response.text().catch(() => "");
-    throw new Error(`Groq API ${response.status}: ${errBody.slice(0, 300)}`);
+    const snippet = errBody.slice(0, 300);
+    throw new Error(`API ${response.status}: ${snippet}`);
   }
 
   // Read OpenAI-style SSE stream
@@ -312,33 +353,168 @@ async function streamGroq({ res, images, systemPrompt, modelName, userNote }) {
           fullText += t;
           sseWrite(res, { text: t });
         }
-      } catch { /* skip */ }
+      } catch { /* skip parse errors */ }
     }
   }
 
-  sseWrite(res, {
-    done: true, provider: "groq", model: modelName,
-    inputTokens: 0, outputTokens: 0,
-  });
-  res.end();
+  return fullText;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Core analysis — Groq (free, no credit card)
+// Anthropic Messages-compatible streaming function
+// Used by DeepSeek via OpenModel (uses /v1/messages endpoint)
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function streamAnalysis({ res, images, mode, tier, userNote }) {
-  const systemPrompt = buildSystemPrompt(mode);
-  const modelName = tier === "quick" ? GROQ_QUICK : GROQ_DEEP;
+async function streamAnthropicCompatible({ res, images, systemPrompt, providerKey, baseUrl, modelName, userNote }) {
+  const text = userNote
+    ? `Analyse these pharmacy curriculum documents. Additional context: ${userNote}`
+    : "Analyse this pharmacy curriculum document, exam question, or study resource:";
 
-  try {
-    sseWrite(res, { status: `Contacting Groq (${modelName})…` });
-    sseWrite(res, { status: "Analysing…", provider: "groq", model: modelName });
-    await streamGroq({ res, images, systemPrompt, modelName, userNote });
-  } catch (err) {
-    console.error("Groq error:", err.message);
-    sseWrite(res, { error: `Groq error: ${err.message}` });
-    res.end();
+  // Build content array for Anthropic format (supports images + text)
+  const content = [{ type: "text", text }];
+
+  for (const uri of images) {
+    const { mimeType, base64 } = parseDataUri(uri);
+    content.push({
+      type: "image",
+      source: { type: "base64", media_type: mimeType, data: base64 },
+    });
+  }
+
+  const response = await fetch(baseUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": providerKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: modelName,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [{ role: "user", content }],
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const errBody = await response.text().catch(() => "");
+    const snippet = errBody.slice(0, 300);
+    throw new Error(`API ${response.status}: ${snippet}`);
+  }
+
+  // Read Anthropic-style SSE stream
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let fullText = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const payload = line.slice(6).trim();
+      if (!payload) continue;
+
+      try {
+        const data = JSON.parse(payload);
+        // Anthropic streaming format:
+        // event: content_block_delta
+        // data: {"type":"content_block_delta","index":1,"delta":{"type":"text_delta","text":"hello"}}
+        if (data.type === "content_block_delta" && data.delta?.type === "text_delta" && data.delta.text) {
+          fullText += data.delta.text;
+          sseWrite(res, { text: data.delta.text });
+        }
+        // Also handle content_block_start with initial text
+        if (data.type === "content_block_start" && data.content_block?.type === "text" && data.content_block.text) {
+          fullText += data.content_block.text;
+          sseWrite(res, { text: data.content_block.text });
+        }
+        // Fallback: OpenAI-compatible format that some proxies use
+        const t = data?.choices?.[0]?.delta?.content;
+        if (t) {
+          fullText += t;
+          sseWrite(res, { text: t });
+        }
+      } catch { /* skip parse errors */ }
+    }
+  }
+
+  return fullText;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Core analysis — routes to the selected provider, with fallback chain
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function streamAnalysis({ res, images, mode, tier, userNote, provider }) {
+  const systemPrompt = buildSystemPrompt(mode);
+
+  // Build the ordered list of providers to try
+  let providerChain;
+  if (provider && PROVIDERS[provider] && PROVIDERS[provider].available()) {
+    // User selected a specific, available provider — try it first, then fall through
+    providerChain = [provider, ...PROVIDER_ORDER.filter((p) => p !== provider)];
+  } else {
+    // No preference or unavailable — use default order
+    providerChain = PROVIDER_ORDER;
+  }
+
+  // Filter to only available providers
+  const availableChain = providerChain.filter((p) => PROVIDERS[p].available());
+
+  if (availableChain.length === 0) {
+    sseWrite(res, { error: "No AI provider is configured. Check server env vars." });
+    return res.end();
+  }
+
+  let lastError = null;
+
+  for (const p of availableChain) {
+    const cfg = PROVIDERS[p];
+    const modelName = tier === "quick" ? cfg.models.quick : cfg.models.deep;
+
+    try {
+      sseWrite(res, { status: `Contacting ${cfg.name} (${modelName})…` });
+      sseWrite(res, { status: "Analysing…", provider: p, model: modelName });
+
+      const streamFn = cfg.protocol === "anthropic" ? streamAnthropicCompatible : streamOpenAICompatible;
+      const fullText = await streamFn({
+        res,
+        images,
+        systemPrompt,
+        providerKey: cfg.key(),
+        baseUrl: cfg.base,
+        modelName,
+        userNote,
+      });
+
+      // Success — send done signal
+      sseWrite(res, {
+        done: true, provider: p, model: modelName,
+        inputTokens: 0, outputTokens: 0,
+      });
+      return res.end();
+
+    } catch (err) {
+      lastError = err;
+      console.warn(`${cfg.name} failed: ${err.message}. Trying next provider…`);
+      sseWrite(res, { status: `${cfg.name} unavailable — trying next provider…` });
+
+      // If this is the LAST provider in the chain, report the error
+      if (p === availableChain[availableChain.length - 1]) {
+        console.error("All providers failed:", lastError.message);
+        sseWrite(res, { error: `All AI providers failed. Last error: ${lastError.message}` });
+        return res.end();
+      }
+      // Otherwise continue to next provider in chain
+    }
   }
 }
 
@@ -369,7 +545,7 @@ app.use(express.static("frontend"));
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.post("/api/analyze", async (req, res) => {
-  const { images, image, mode = "general", tier = "deep", userNote = "" } = req.body;
+  const { images, image, mode = "general", tier = "deep", userNote = "", provider = "" } = req.body;
 
   const rawImages = images || (image ? [image] : null);
 
@@ -400,20 +576,31 @@ app.post("/api/analyze", async (req, res) => {
     forwardToTelegram(rawB64, cap);
   }
 
-  await streamAnalysis({ res, images: dataUris, mode, tier, userNote });
+  await streamAnalysis({ res, images: dataUris, mode, tier, userNote, provider });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/models
+// Returns all available providers and their models
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.get("/api/models", (_req, res) => {
+  const availableProviders = {};
+  const models = {};
+
+  for (const p of PROVIDER_ORDER) {
+    const cfg = PROVIDERS[p];
+    const avail = cfg.available();
+    availableProviders[p] = avail;
+    if (avail) {
+      models[p] = { deep: cfg.models.deep, quick: cfg.models.quick };
+    }
+  }
+
   res.json({
-    groq: true,
-    models: {
-      deep:  GROQ_DEEP,
-      quick: GROQ_QUICK,
-    },
+    providers: availableProviders,
+    models,
+    order: PROVIDER_ORDER,
   });
 });
 
@@ -428,5 +615,8 @@ app.get("/health", (_req, res) => res.json({ status: "ok", ts: Date.now() }));
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`PharmaScan API v2.2 listening on :${PORT} — CDACC RVTTI Eldoret Syllabus`);
+  const active = PROVIDER_ORDER.filter((p) => PROVIDERS[p].available());
+  console.log(`PharmaScan API v2.3 listening on :${PORT}`);
+  console.log(`  Active providers: ${active.map((p) => PROVIDERS[p].name).join(", ")}`);
+  console.log(`  Fallback chain: ${active.join(" → ")}`);
 });

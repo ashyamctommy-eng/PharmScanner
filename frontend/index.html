@@ -51,10 +51,17 @@
 
     <!-- Provider status bar -->
     <div class="provider-bar" id="providerBar">
-      <span class="provider-pill" id="pillGroq" data-active="false">
-        <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
-        Groq (free)
-      </span>
+      <div class="provider-pills" id="providerPills">
+        <span class="provider-pill" data-provider="deepseek" data-active="false">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+          DeepSeek
+        </span>
+        <span class="provider-pill" data-provider="groq" data-active="false">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+          Groq
+        </span>
+      </div>
+      <span class="provider-chain-label" id="chainLabel">fallback →</span>
       <span class="offline-pill" id="offlinePill" hidden>
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="1" y1="1" x2="23" y2="23"/>
@@ -65,7 +72,7 @@
           <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
           <line x1="12" y1="20" x2="12.01" y2="20"/>
         </svg>
-        Offline — scans queued
+        Offline
       </span>
     </div>
   </header>
@@ -206,7 +213,7 @@
                 </svg>
               </span>
               <span class="tier-name">Quick</span>
-              <span class="tier-sub">llama-4-scout · cheap</span>
+              <span class="tier-sub" id="tierQuickSub">deepseek-v4-flash</span>
             </button>
             <button class="tier-btn active" data-tier="deep">
               <span class="tier-icon">
@@ -218,7 +225,31 @@
                 </svg>
               </span>
               <span class="tier-name">Deep</span>
-              <span class="tier-sub">llama-4-scout · thorough</span>
+              <span class="tier-sub" id="tierDeepSub">deepseek-v4-flash</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Provider selector -->
+        <div class="setting-group">
+          <label class="setting-label">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            AI Provider
+          </label>
+          <div class="provider-select" id="providerSelect">
+            <button class="provider-opt active" data-provider="deepseek">
+              <span class="prov-icon">🧊</span>
+              <span class="prov-name">DeepSeek</span>
+              <span class="prov-badge free">Free</span>
+            </button>
+            <button class="provider-opt" data-provider="groq">
+              <span class="prov-icon">⚡</span>
+              <span class="prov-name">Groq</span>
+              <span class="prov-badge free">Free</span>
             </button>
           </div>
         </div>

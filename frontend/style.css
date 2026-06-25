@@ -125,12 +125,20 @@ body {
   font-weight: 600;
 }
 
+.provider-pills {
+  display: flex;
+  gap: 0.4rem;
+}
+
 .provider-pill {
   padding: 0.18rem 0.55rem;
   border-radius: 9999px;
   background: var(--gray-100);
   color: var(--gray-400);
-  transition: var(--transition);
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .provider-pill[data-active="true"] {
@@ -138,7 +146,21 @@ body {
   color: var(--success);
 }
 
-.offline-pill {
+.provider-pill[data-active="true"][data-provider="deepseek"] {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.provider-pill[data-active="true"][data-provider="groq"] {
+  background: #f3e5f5;
+  color: #4a148c;
+}
+
+.provider-chain-label {
+  color: var(--gray-400);
+  font-size: 0.65rem;
+  font-weight: 500;
+}
   padding: 0.18rem 0.55rem;
   border-radius: 9999px;
   background: var(--warn-light);
@@ -420,6 +442,51 @@ body {
 .tier-name { font-size: 0.82rem; font-weight: 700; color: var(--primary-dark); }
 .tier-sub  { font-size: 0.68rem; color: var(--gray-400); }
 
+/* Provider selector */
+.provider-select {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.provider-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.5rem 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--gray-200);
+  background: var(--white);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: var(--font);
+  position: relative;
+}
+.provider-opt:hover { border-color: var(--primary); transform: translateY(-1px); }
+.provider-opt.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 2px 8px rgba(10,92,126,0.12);
+}
+.provider-opt:active { transform: scale(0.97); }
+.provider-opt[hidden] { display: none; }
+
+.prov-icon { font-size: 1.1rem; }
+.prov-name { font-size: 0.8rem; font-weight: 700; color: var(--primary-dark); }
+.prov-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.08rem 0.5rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.prov-badge.free {
+  background: var(--success-light);
+  color: var(--success);
+}
+
 /* Note textarea */
 .note-row { margin-top: 0.85rem; }
 .user-note {
@@ -616,6 +683,7 @@ body {
 .meta-pill.openai { background: #e0f2fe; color: #075985; }
 .meta-pill.gemini { background: #e8f5e9; color: #1b5e20; }
 .meta-pill.groq { background: #f3e5f5; color: #4a148c; }
+.meta-pill.deepseek { background: #e0f2fe; color: #0369a1; }
 .meta-pill.claude { background: #fce7f3; color: #9d174d; }
 .meta-pill.cached { background: var(--accent-light); color: var(--accent-dark); }
 
@@ -923,6 +991,7 @@ body.dark {
 body.dark .app-header { background: linear-gradient(135deg,#0c4a6e,#1e293b); }
 body.dark .scan-box { border-color: var(--gray-200); background: var(--bg-card); }
 body.dark .card, body.dark .settings-card { background: var(--bg-card); border-color: var(--gray-200); }
+body.dark .card:hover { box-shadow: 0 6px 28px rgba(0,0,0,0.5); }
 body.dark .result-body .q-card { background: var(--gray-100); border-color: var(--gray-200); }
 body.dark .result-body .q-card::before { opacity: 0.8; }
 body.dark .history-panel { background: var(--bg); border-left-color: var(--gray-200); }
@@ -931,6 +1000,12 @@ body.dark .history-item:hover { background: var(--gray-100); }
 body.dark .user-note { background: var(--bg-card); color: var(--gray-700); border-color: var(--gray-200); }
 body.dark .credits-section { border-top-color: var(--gray-200); }
 body.dark .app-footer { border-top-color: var(--gray-200); color: var(--gray-400); }
+body.dark .provider-bar { border-top-color: var(--gray-200); }
+body.dark .provider-opt { background: var(--bg-card); border-color: var(--gray-200); }
+body.dark .provider-opt:hover { border-color: var(--primary); }
+body.dark .provider-opt.active { background: var(--primary-light); border-color: var(--primary); }
+body.dark .prov-name { color: var(--gray-700); }
+body.dark .provider-bar .provider-pill { background: var(--gray-100); }
 
 /* ─── Syllabus progress badge ──────────────────────────────────────────── */
 .syllabus-badge {
@@ -1274,6 +1349,11 @@ body.dark .app-footer { border-top-color: var(--gray-200); color: var(--gray-400
 }
 
 /* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .settings-row { grid-template-columns: 1fr !important; }
+  .provider-select { grid-template-columns: 1fr 1fr; }
+}
+
 @media (max-width: 480px) {
   .logo { font-size: 1.1rem; }
   .container { padding: 0.65rem; gap: 0.75rem; }
@@ -1282,9 +1362,94 @@ body.dark .app-footer { border-top-color: var(--gray-200); color: var(--gray-400
   .settings-card { padding: 0.85rem 1rem 1rem; }
   .btn-analyze { padding: 0.7rem 1.8rem; font-size: 0.95rem; }
   .tier-sub { display: none; }
+  .provider-chain-label { display: none; }
+  .provider-pills { gap: 0.25rem; }
+  .provider-pill { font-size: 0.65rem; padding: 0.14rem 0.4rem; }
+  .header-actions { gap: 0.2rem; }
 }
 
 @media (max-width: 360px) {
   .mode-pill { font-size: 0.72rem; padding: 0.25rem 0.55rem; }
   .tier-btn { padding: 0.45rem 0.3rem; }
+  .provider-opt { padding: 0.4rem 0.3rem; }
+  .prov-name { font-size: 0.72rem; }
+}
+
+/* ─── Animations & polish ────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  box-shadow: 0 6px 28px rgba(6,70,99,0.13);
+}
+
+.scan-card:hover,
+.settings-card:hover {
+  transform: translateY(-1px);
+}
+
+/* Subtle entrance for result card */
+.result-card:not([hidden]) {
+  animation: cardSlideUp 0.35s ease-out;
+}
+
+@keyframes cardSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Status bar entrance */
+.status-bar:not([hidden]) {
+  animation: fadeSlide 0.25s ease-out;
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Button press feedback */
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Subtle gradient border for scan box */
+.scan-box {
+  background: rgba(13,148,136,0.03);
+}
+
+/* Smooth provider pill transitions */
+.provider-pill {
+  transition: all 0.25s ease;
+}
+
+/* Better focus outlines */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* App footer subtle hover */
+.app-footer p {
+  transition: color 0.2s ease;
+}
+.app-footer:hover p {
+  color: var(--gray-500);
+}
+
+/* Mode pill active subtle glow */
+.mode-pill.active {
+  box-shadow: 0 0 0 2px rgba(13,148,136,0.15);
+}
+
+/* Offline pill (needed to not be lost after edit) */
+.offline-pill {
+  padding: 0.18rem 0.55rem;
+  border-radius: 9999px;
+  background: var(--warn-light);
+  color: var(--warn);
 }

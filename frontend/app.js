@@ -63,7 +63,11 @@ const detailBody       = $("detailBody");
 const detailCloseBtn   = $("detailCloseBtn");
 const detailCopyBtn    = $("detailCopyBtn");
 const detailDeleteBtn  = $("detailDeleteBtn");
-const pillGroq       = $("pillGroq");
+const providerSelect   = $("providerSelect");
+const providerPills    = $("providerPills");
+const chainLabel       = $("chainLabel");
+const tierQuickSub     = $("tierQuickSub");
+const tierDeepSub      = $("tierDeepSub");
 const offlinePill      = $("offlinePill");
 const toastEl          = $("toast");
 
@@ -71,6 +75,7 @@ const toastEl          = $("toast");
 const capturedImages = []; // Array of { blob, thumbnailDataUri, base64 }
 let selectedMode     = "general";
 let selectedTier     = "deep";
+let selectedProvider = "deepseek"; // default
 let abortCtrl        = null;
 let isAnalyzing      = false;
 let lastAnalysisText = "";
@@ -94,13 +99,60 @@ async function refreshProviderStatus() {
     const res = await fetch("/api/models");
     if (!res.ok) return;
     const data = await res.json();
-    pillGroq.dataset.active = String(data.groq);
+
+    // Update provider bar pills (always show, green if active)
+    const pills = providerPills.querySelectorAll(".provider-pill");
+    pills.forEach((pill) => {
+      const prov = pill.dataset.provider;
+      const active = data.providers?.[prov] === true;
+      pill.dataset.active = String(active);
+      if (!active) pill.title = "Not configured — add API key in .env";
+    });
+
+    // Update chain label
+    const activeChain = (data.order || []).filter((p) => data.providers?.[p]);
+    chainLabel.textContent = activeChain.length > 1
+      ? activeChain.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(" → ")
+      : "";
+
+    // Update provider select buttons (show/hide based on availability)
+    providerSelect.querySelectorAll(".provider-opt").forEach((btn) => {
+      const prov = btn.dataset.provider;
+      const active = data.providers?.[prov] === true;
+      btn.hidden = !active;
+    });
+
     // Update tier sub-labels with actual model names
-    document.querySelectorAll(".tier-btn[data-tier='quick'] .tier-sub")
-      .forEach((el) => { el.textContent = `${data.models.quick} · cheap`; });
-    document.querySelectorAll(".tier-btn[data-tier='deep'] .tier-sub")
-      .forEach((el) => { el.textContent = `${data.models.deep} · thorough`; });
+    if (data.models) {
+      const activeProv = data.providers?.[selectedProvider]
+        ? selectedProvider
+        : (data.order || []).find((p) => data.providers?.[p]) || "";
+      const providerModels = data.models?.[activeProv];
+      if (providerModels) {
+        tierQuickSub.textContent = providerModels.quick || "—";
+        tierDeepSub.textContent = providerModels.deep || "—";
+      }
+    }
+
+    // If selected provider is no longer available, switch to first available
+    if (!data.providers?.[selectedProvider]) {
+      const firstAvail = (data.order || []).find((p) => data.providers?.[p]);
+      if (firstAvail) {
+        selectedProvider = firstAvail;
+        updateProviderUI();
+      }
+    }
   } catch { /* offline */ }
+}
+
+function updateProviderUI() {
+  providerSelect.querySelectorAll(".provider-opt").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.provider === selectedProvider);
+  });
+  // Update provider bar active styling
+  providerPills.querySelectorAll(".provider-pill").forEach((pill) => {
+    pill.dataset.active = String(pill.dataset.provider === selectedProvider);
+  });
 }
 
 // ─── Online / offline ────────────────────────────────────────────────────────
@@ -277,6 +329,15 @@ tierToggle.addEventListener("click", (e) => {
   btn.classList.add("active");
 });
 
+// ─── Provider selection ────────────────────────────────────────────────────
+providerSelect.addEventListener("click", (e) => {
+  const btn = e.target.closest(".provider-opt");
+  if (!btn || btn.disabled || isAnalyzing) return;
+  selectedProvider = btn.dataset.provider;
+  updateProviderUI();
+  toast(`Switched to ${btn.querySelector(".prov-name").textContent}`);
+});
+
 // ─── Core analysis ────────────────────────────────────────────────────────────
 /**
  * Run the analysis pipeline. Called by the Analyse button and offline drain.
@@ -309,7 +370,7 @@ async function runAnalysis(images, mode, tier, userNote, isRetry = false) {
     const response = await fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ images, mode, tier, userNote }),
+      body: JSON.stringify({ images, mode, tier, userNote, provider: selectedProvider }),
       signal: abortCtrl.signal,
     });
 
@@ -418,7 +479,9 @@ function renderMetaPills({ provider, model, fromCache }) {
   if (fromCache) {
     pills.push(`<span class="meta-pill cached">⚡ Local cache</span>`);
   } else {
-    pills.push(`<span class="meta-pill groq">Groq</span>`);
+    const provClass = provider || "deepseek";
+    const provLabel = { deepseek: "DeepSeek", groq: "Groq", openai: "OpenAI" }[provClass] || provClass;
+    pills.push(`<span class="meta-pill ${provClass}">${provLabel}</span>`);
     if (model) pills.push(`<span class="meta-pill">${model}</span>`);
   }
   resultMeta.innerHTML = pills.join("");
